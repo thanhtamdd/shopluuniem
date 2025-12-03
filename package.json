@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "axios": "^1.13.2",
+    "validator": "^13.15.23"
+  },
+  "scripts": {
+    "start-all": "concurrently \"cd client_app && npm start\" \"cd admin_app && npm start\" \"cd server_app && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
