@@ -49,14 +49,11 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
   ],
-
-  webServer: process.env.CI
-  ? undefined
-  : {
-      command: 'npm run dev',
-      url: 'http://localhost:3000',
-      reuseExistingServer: true,
-    },
-
+  webServer: {
+  command: 'npm run dev',
+  url: 'http://localhost:3000',
+  reuseExistingServer: !process.env.CI, // Chỉ reuse khi local
+  timeout: 120000, // Tăng timeout lên 2 phút
+},
 });
 

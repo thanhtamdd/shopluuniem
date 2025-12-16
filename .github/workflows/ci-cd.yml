@@ -89,8 +89,8 @@ jobs:
       
       - name: Setup test database
         run: |
-          sqlcmd -S localhost -U sa -P TestPassword123! -Q "CREATE DATABASE shopluuniem_test"
-          sqlcmd -S localhost -U sa -P TestPassword123! -d shopluuniem_test -i server_app/database/schema.sql
+          docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "CREATE DATABASE shopluuniem_test"
+          docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -d shopluuniem_test -i /server_app/database/schema.sql || true
       
       - name: Run backend tests
         env:

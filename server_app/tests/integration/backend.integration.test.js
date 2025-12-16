@@ -4,7 +4,7 @@
  */
 
 import request from 'supertest';
-import { connectDB, getPool } from '../config/db.js';
+import { connectDB, getPool } from '../../config/db.js';
 import sql from 'mssql';
 
 const BASE_URL = 'http://localhost:8000';
