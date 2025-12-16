@@ -1,169 +1,147 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from "react-hook-form";
-import queryString from 'query-string'
-import isEmpty from 'validator/lib/isEmpty'
-import isEmail from 'validator/lib/isEmail'
+import { useHistory } from 'react-router-dom';
+import isEmpty from 'validator/lib/isEmpty';
+import isEmail from 'validator/lib/isEmail';
 
-import userApi from '../Api/userAPI'
-import permissionAPI from '../Api/permissionAPI'
+import userApi from '../Api/userAPI';
+import permissionAPI from '../Api/permissionAPI';
 
-function CreateUser(props) {
-    const [permission, setPermission] = useState([])
-    const [name, setName] = useState('');
-    const [username, setUserName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [permissionChoose, setPermissionChoose] = useState('');
-    const [validationMsg, setValidationMsg] = useState('');
-    const { handleSubmit } = useForm();
+function CreateUser() {
+  const history = useHistory(); // v5 dùng useHistory
+  const [permission, setPermission] = useState([]);
+  const [name, setName] = useState('');
+  const [username, setUserName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [permissionChoose, setPermissionChoose] = useState('');
+  const [validationMsg, setValidationMsg] = useState({});
+  const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const fetchAllData = async () => {
-            const ps = await permissionAPI.getAPI();
-            setPermission(ps)
-        }
-        fetchAllData()
-    }, [])
+  // Lấy danh sách quyền
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const ps = await permissionAPI.getAPI();
+        setPermission(ps);
+      } catch (err) {
+        console.error('Fetch permission error:', err);
+      }
+    };
+    fetchPermissions();
+  }, []);
 
-    const validateAll = () => {
-        const phongeRegex = /^0(?=.+[0-9]).{9}$/
-        const nameRegex = /^\b[A-Za-zÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝàáâãèéêìíòóôõùúýĂăĐđĨĩŨũƠơƯưẠ-ỹ ]+.{1}$/
-        const usernameRegex = /^(?=[a-zA-Z0-9._]{8,20}$)(?!.*[_.]{2})[^_.].*[^_.]$/
-        let msg = {}
-        if (isEmpty(name)) {
-            msg.name = "Tên không được để trống"
-        } else if (nameRegex.test(name.trim()) === false) {
-            msg.name = "Tên sai định dạng (Ít nhất 3 kí tự alphabet)"
-        }
+  const validateAll = () => {
+    const nameRegex = /^[A-Za-zÀ-ỹ ]{3,}$/;
+    const usernameRegex = /^(?=[a-zA-Z0-9._]{8,20}$)(?!.*[_.]{2})[^_.].*[^_.]$/;
+    let msg = {};
 
-        if (isEmpty(email)) {
-            msg.email = "Email không được để trống"
-        } else if (!isEmail(email)) {
-            msg.email = "Email sai định dạng"
-        }
+    if (isEmpty(name.trim())) msg.name = "Tên không được để trống";
+    else if (!nameRegex.test(name.trim())) msg.name = "Tên sai định dạng (ít nhất 3 ký tự alphabet)";
 
-        if (isEmpty(password)) {
-            msg.password = "Mật khẩu không được để trống"
-        }
-        if (isEmpty(permissionChoose)) {
-            msg.permission = "Vui lòng chọn quyền"
-        }
-        if (isEmpty(username.trim())) {
-            msg.username = "Username không được để trống"
-        } else if (!usernameRegex.test(username.trim())) {
-            msg.username = "Username sai định dạng"
-        }
+    if (isEmpty(username.trim())) msg.username = "Username không được để trống";
+    else if (!usernameRegex.test(username.trim())) msg.username = "Username sai định dạng";
 
-        setValidationMsg(msg)
-        if (Object.keys(msg).length > 0) return false;
-        return true;
+    if (isEmpty(email.trim())) msg.email = "Email không được để trống";
+    else if (!isEmail(email.trim())) msg.email = "Email sai định dạng";
+
+    if (isEmpty(password)) msg.password = "Mật khẩu không được để trống";
+    if (isEmpty(permissionChoose)) msg.permission = "Vui lòng chọn quyền";
+
+    setValidationMsg(msg);
+    return Object.keys(msg).length === 0;
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!validateAll()) return;
+
+    setLoading(true);
+    try {
+      const user = { name, username, email, password, permission: permissionChoose };
+      const response = await userApi.create(user); // gửi POST body JSON
+
+      if (response.msg === "Bạn đã thêm thành công") {
+        alert(response.msg);
+        // Reset form
+        setName('');
+        setUserName('');
+        setEmail('');
+        setPassword('');
+        setPermissionChoose('');
+        setValidationMsg({});
+        // Redirect về trang user
+        history.push('/user');
+      } else {
+        setValidationMsg({ api: response.msg });
+      }
+    } catch (err) {
+      console.error('Create user error:', err);
+      setValidationMsg({ api: 'Server không phản hồi' });
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const handleCreate = () => {
+  return (
+    <div className="page-wrapper">
+      <div className="container-fluid">
+        <div className="card">
+          <div className="card-body">
+            <h4 className="card-title">Create User</h4>
 
-        const isValid = validateAll();
-        if (!isValid) return
-        addUser();
-    }
+            {validationMsg.api && (
+              <div className={`alert ${validationMsg.api === "Bạn đã thêm thành công" ? "alert-success" : "alert-danger"} alert-dismissible fade show`} role="alert">
+                {validationMsg.api}
+              </div>
+            )}
 
-    const addUser = async () => {
-        const user = {
-            name: name,
-            email: email,
-            password: password,
-            username: username,
-            permission: permissionChoose
-        }
-        const query = '?' + queryString.stringify(user)
-        const response = await userApi.create(query)
+            <form onSubmit={handleCreate}>
+              <div className="form-group w-50">
+                <label>Name:</label>
+                <input type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} />
+                <small className="form-text text-danger">{validationMsg.name}</small>
+              </div>
 
-        if (response.msg === "Bạn đã thêm thành công") {
-            window.scrollTo(0, 0)
-            setName('');
-            setUserName('');
-            setEmail('');
-            setPassword('');
-            setPermissionChoose('');
+              <div className="form-group w-50">
+                <label>Username:</label>
+                <input type="text" className="form-control" value={username} onChange={e => setUserName(e.target.value)} />
+                <small className="form-text text-danger">{validationMsg.username}</small>
+              </div>
 
-        }
-        setValidationMsg({ api: response.msg })
+              <div className="form-group w-50">
+                <label>Email:</label>
+                <input type="text" className="form-control" value={email} onChange={e => setEmail(e.target.value)} />
+                <small className="form-text text-danger">{validationMsg.email}</small>
+              </div>
 
-    }
+              <div className="form-group w-50">
+                <label>Password:</label>
+                <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} />
+                <small className="form-text text-danger">{validationMsg.password}</small>
+              </div>
 
-    return (
-        <div className="page-wrapper">
+              <div className="form-group w-50">
+                <label>Chọn quyền:</label>
+                <select className="form-control" value={permissionChoose} onChange={e => setPermissionChoose(e.target.value)}>
+                  <option value="">Chọn quyền</option>
+                  {permission.map(item => <option key={item._id} value={item._id}>{item.permission}</option>)}
+                </select>
+                <small className="form-text text-danger">{validationMsg.permission}</small>
+              </div>
 
-            <div className="container-fluid">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="card">
-                            <div className="card-body">
-                                <h4 className="card-title">Create User</h4>
-                                {
-                                    validationMsg.api === "Bạn đã thêm thành công" ?
-                                        (
-                                            <div className="alert alert-success alert-dismissible fade show" role="alert">
-                                                {validationMsg.api}
-                                                <button type="button" className="close" data-dismiss="alert" aria-label="Close">
-                                                    <span aria-hidden="true">×</span>
-                                                </button>
-                                            </div>
-                                        ) :
-                                        (
-                                            <p className="form-text text-danger">{validationMsg.api}</p>
-                                        )
-                                }
-
-
-                                <form onSubmit={handleSubmit(handleCreate)}>
-                                    <div className="form-group w-50">
-                                        <label htmlFor="name">Name:</label>
-                                        <input type="text" className="form-control" id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} required />
-                                        <p className="form-text text-danger">{validationMsg.name}</p>
-                                    </div>
-
-                                    <div className="form-group w-50">
-                                        <label htmlFor="username">Username:</label>
-                                        <input type="text" className="form-control" id="username" name="username" value={username} onChange={(e) => setUserName(e.target.value)} required />
-                                        <p className="form-text text-danger">{validationMsg.username}</p>
-                                    </div>
-
-                                    <div className="form-group w-50">
-                                        <label htmlFor="email">Email:</label>
-                                        <input type="text" className="form-control" id="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                                        <p className="form-text text-danger">{validationMsg.email}</p>
-                                    </div>
-
-                                    <div className="form-group w-50">
-                                        <label htmlFor="password">Password:</label>
-                                        <input type="password" className="form-control" id="password" name="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                                        <p className="form-text text-danger">{validationMsg.password}</p>
-                                    </div>
-
-                                    <div className="form-group w-50">
-                                        <label htmlFor="categories" className="mr-2">Chọn quyền:</label>
-                                        <select name="categories" id="categories" value={permissionChoose} onChange={(e) => setPermissionChoose(e.target.value)}>
-                                            <option>Chọn quyền</option>
-                                            {
-                                                permission && permission.map((item, index) => (
-                                                    <option value={item._id} key={index} >{item.permission}</option>
-                                                ))
-                                            }
-                                        </select>
-                                        <p className="form-text text-danger">{validationMsg.permission}</p>
-                                    </div>
-                                    <button type="submit" className="btn btn-primary">Create</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <footer className="footer text-center text-muted">
-                All Rights Reserved by Adminmart. Designed and Developed by <a href="https://wrappixel.com">WrapPixel</a>.
-    </footer>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Creating...' : 'Create'}
+              </button>
+            </form>
+          </div>
         </div>
-    );
+      </div>
+
+      <footer className="footer text-center text-muted mt-3">
+        All Rights Reserved by Adminmart. Designed and Developed by <a href="https://wrappixel.com">WrapPixel</a>.
+      </footer>
+    </div>
+  );
 }
 
 export default CreateUser;

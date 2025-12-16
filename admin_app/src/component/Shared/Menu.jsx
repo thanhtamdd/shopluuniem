@@ -1,130 +1,87 @@
-import React, { useState, useContext, useEffect } from 'react';
-import {
-    NavLink,
-    Redirect
-} from "react-router-dom";
-import { AuthContext } from '../context/Auth'
+import { useContext, useState, useEffect, useRef } from 'react';
+import { NavLink } from 'react-router-dom';
+import PerfectScrollbar from 'perfect-scrollbar';
+import { AuthContext } from '../context/Auth';
+import 'perfect-scrollbar/css/perfect-scrollbar.css';
 
-function Menu() {
-    const { user, jwt } = useContext(AuthContext);
+const MENU = [
+  { label: 'Customer', permission: 'Nhân Viên', path: '/customer' },
+  { label: 'Coupon', permission: 'Nhân Viên', path: '/coupon' },
+  { label: 'Product', permission: 'Nhân Viên', path: '/product' },
+  { label: 'Sale', permission: 'Nhân Viên', path: '/sale' },
+  { label: 'Category', permission: 'Nhân Viên', path: '/category' },
+  { label: 'Order', permission: 'Nhân Viên', path: '/order' },
+  { label: 'ConfirmOrder', permission: 'Nhân Viên', path: '/confirmorder' },
+  { label: 'Delivery', permission: 'Nhân Viên', path: '/delivery' },
+  { label: 'ConfirmDelivery', permission: 'Nhân Viên', path: '/confirmdelivery' },
+  { label: 'CompletedOrder', permission: 'Nhân Viên', path: '/completedorder' },
+  { label: 'CancelOrder', permission: 'Nhân Viên', path: '/cancelorder' },
+  { label: 'User', permission: 'Admin', path: '/user' },
+  { label: 'Permission', permission: 'Admin', path: '/permission' },
+];
 
-    const [menu, setMenu] = useState([
-        {
-            item: "Customer",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "Coupon",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "Product",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "Sale",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "Category",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "Order",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "ConfirmOrder",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "Delivery",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "ConfirmDelivery",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "CompletedOrder",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "CancelOrder",
-            permission: "Nhân Viên"
-        },
-        {
-            item: "User",
-            permission: "Admin"
-        },
-        {
-            item: "Permission",
-            permission: "Admin"
-        }
-        // "Category", ,
-        // "Permission",
-        // "User",
-        // "Order",
-        // "ConfirmOrder",
-        // "Delivery",
-        // "ConfirmDelivery",   
-        // "CompletedOrder",
-        // "CancelOrder"
-    ])
-    let { pathname } = window.location;
-    return (
-        <div>
-            {
-                jwt && user ?
-                    (
-                        <aside className="left-sidebar" data-sidebarbg="skin6">
-                            <div className="scroll-sidebar" data-sidebarbg="skin6">
-                                <nav className="sidebar-nav">
-                                    <ul id="sidebarnav">
+function Menu({ collapsed }) {
+  const { user } = useContext(AuthContext);
+  const sidebarRef = useRef(null);
+  const [open, setOpen] = useState(true);
 
-                                        <li className="list-divider"></li>
+  useEffect(() => {
+    if (!user || !sidebarRef.current) return;
 
-                                        <li className="nav-small-cap"><span className="hide-menu">Components</span></li>
+    const ps = new PerfectScrollbar(sidebarRef.current);
 
+    return () => {
+      ps.destroy();
+    };
+  }, [user]);
 
-                                        <li className="sidebar-item"> <a className="sidebar-link has-arrow" href="#"
-                                            aria-expanded="false"><i data-feather="grid" className="feather-icon"></i><span
-                                                className="hide-menu">Tables </span></a>
-                                            <ul aria-expanded="false" className="collapse  first-level base-level-line">
-                                                {
-                                                    menu && menu.map((item, index) => (
-                                                        (
-                                                            <li className="sidebar-item active" key={index}>
-                                                                {
-                                                                    item.permission === user.id_permission.permission ?
-                                                                        (
-                                                                            <NavLink to={"/" + item.item.toLowerCase()} className="sidebar-link">
-                                                                                {item.item}
-                                                                            </NavLink>
-                                                                        ) :
-                                                                        (
-                                                                            <div></div>
-                                                                        )
-                                                                }
-                                                            </li>
-                                                        )
-                                                    ))
-                                                }
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                </nav>
-                            </div>
-                        </aside>
-                    ) :
-                    (
-                        <Redirect to="/" />
-                    )
-            }
-        </div>
+  if (!user) return null;
 
+  const role =
+    user.id_permission === 1
+      ? 'Admin'
+      : user.id_permission === 2
+      ? 'Nhân Viên'
+      : '';
 
-    );
+  return (
+    <aside className={`left-sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <div className="scroll-sidebar" ref={sidebarRef}>
+        <nav className="sidebar-nav">
+          <ul className="sidebar-nav">
+            <li className="nav-small-cap">Components</li>
+
+            <li className={`sidebar-item ${open ? 'active' : ''}`}>
+              <div
+                className="sidebar-link"
+                onClick={() => setOpen(!open)}
+                style={{ cursor: 'pointer' }}
+              >
+                <i className="mdi mdi-grid"></i>
+                <span>Tables</span>
+              </div>
+
+              {open && (
+                <ul className="first-level">
+                  {MENU.filter(m => m.permission === role).map(m => (
+                    <li key={m.path} className="sidebar-item">
+                      <NavLink
+                        to={m.path}
+                        className="sidebar-link"
+                        activeClassName="active"
+                      >
+                        {m.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </aside>
+  );
 }
 
 export default Menu;

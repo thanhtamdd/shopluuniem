@@ -1,27 +1,25 @@
 import axiosClient from './axiosClient';
 
 const userAPI = {
-  login: async (data) => {
+  getAPI: async (params = {}) => {
     try {
-      const res = await axiosClient.post('/admin/user/login', data);
-
-      console.log('[userAPI.login] raw response:', res);
-
-      return {
-        success: res.success,
-        user: res.user || null,
-        token: res.token || null,  // <-- sửa từ res.jwt thành res.token
-        msg: res.msg || null,
-      };
+      const res = await axiosClient.get('/admin/user', { params });
+      return res.data; // Bắt buộc lấy res.data, không phải res
     } catch (err) {
-      console.error('[userAPI.login] error', err);
-      return {
-        success: false,
-        msg: 'Server không phản hồi',
-      };
+      console.error('[userAPI.getAPI] error', err);
+      return { users: [], totalPage: 1, currentPage: 1 };
     }
   },
-};
 
+  delete: async (id) => {
+    try {
+      const res = await axiosClient.delete(`/admin/user?id=${id}`);
+      return res.data;
+    } catch (err) {
+      console.error('[userAPI.delete] error', err);
+      return { msg: 'Server không phản hồi' };
+    }
+  }
+};
 
 export default userAPI;

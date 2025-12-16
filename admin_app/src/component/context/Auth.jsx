@@ -1,49 +1,50 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { Redirect } from 'react-router-dom';
-
 
 export const AuthContext = createContext();
 
 const AuthContextProvider = (props) => {
-    const [jwt, setJWT] = useState();
-    const [user, setUser] = useState();
+  const [jwt, setJWT] = useState(null);
+  const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        localStorage.getItem('jwt') && setJWT(JSON.parse(localStorage.getItem('jwt')));
-        localStorage.getItem('user') && setUser(JSON.parse(localStorage.getItem('user')));
-    }, [])
+  // ✅ CHỈ load từ sessionStorage
+  useEffect(() => {
+    const token = sessionStorage.getItem('token');
+    const storedUser = sessionStorage.getItem('user');
 
-    const addLocal = (jwt, user) => {
-
-        localStorage.setItem("jwt", JSON.stringify(jwt))
-        localStorage.setItem("user", JSON.stringify(user))
-
-        setJWT(jwt);
-        setUser(user);
-        
+    if (token && storedUser) {
+      setJWT(token);
+      setUser(JSON.parse(storedUser));
     }
+  }, []);
 
-    const logOut = () => {
-        localStorage.removeItem("jwt")
-        localStorage.removeItem("user")
+  // ✅ LOGIN
+  const addLocal = (token, user) => {
+    sessionStorage.setItem('token', token);
+    sessionStorage.setItem('user', JSON.stringify(user));
 
-        setJWT();
-        setUser();
-        <Redirect to="/" />
-    }
+    setJWT(token);
+    setUser(user);
+  };
 
+  // ✅ LOGOUT
+  const logOut = () => {
+    sessionStorage.clear();
+    setJWT(null);
+    setUser(null);
+  };
 
-    return (
-        <AuthContext.Provider
-            value={{
-                jwt,
-                user,
-                addLocal,
-                logOut
-            }}>
-            {props.children}
-        </AuthContext.Provider>
-    );
-}
+  return (
+    <AuthContext.Provider
+      value={{
+        jwt,
+        user,
+        addLocal,
+        logOut,
+      }}
+    >
+      {props.children}
+    </AuthContext.Provider>
+  );
+};
 
 export default AuthContextProvider;

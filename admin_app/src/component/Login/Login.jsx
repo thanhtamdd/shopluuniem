@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { useHistory, Redirect } from 'react-router-dom';
+import React, { useState, useContext, useEffect, useRef } from 'react';
+import { Redirect } from 'react-router-dom';
 import isEmpty from 'validator/lib/isEmpty';
 
 import userAPI from '../Api/userAPI';
@@ -7,12 +7,19 @@ import { AuthContext } from '../context/Auth';
 
 function Login() {
   const { addLocal, jwt, user } = useContext(AuthContext);
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [validationMsg, setValidationMsg] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const history = useHistory();
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const validateAll = () => {
     const msg = {};
@@ -26,87 +33,111 @@ function Login() {
     if (!validateAll()) return;
 
     setLoading(true);
+    setValidationMsg({});
+
     try {
       const response = await userAPI.login({ identifier, password });
-
       console.log('[Login Response]', response);
 
-      if (response.success) {
-  console.log('Token nhận được:', response.token); // kiểm tra
-  addLocal(response.token, response.user);
-
-  const permission = response.user.permission_name || '';
-  if (permission === 'Nhân Viên') history.push('/customer');
-  else if (permission === 'Admin') history.push('/user');
-  else setValidationMsg({ api: 'Bạn không có quyền truy cập' });
-}
-
-      else {
-        setValidationMsg({ api: response.msg || 'Đăng nhập thất bại' });
+      if (!response.success) {
+        if (mountedRef.current) {
+          setValidationMsg({ api: response.msg || 'Đăng nhập thất bại' });
+        }
+        return;
       }
+
+      addLocal(response.token, response.user);
+
     } catch (error) {
-      console.error('[Login Error]', error);
-      setValidationMsg({ api: 'Server không phản hồi hoặc có lỗi xảy ra' });
+      console.error(error);
+      if (mountedRef.current) {
+        setValidationMsg({ api: 'Server lỗi' });
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // Redirect nếu đã login
+  // ===== REDIRECT =====
   if (jwt && user) {
-    const permission = user.permission_name || '';
-    if (permission === 'Nhân Viên') return <Redirect to="/customer" />;
-    if (permission === 'Admin') return <Redirect to="/user" />;
+    if (user.id_permission === 1) return <Redirect to="/user" />;
+    if (user.id_permission === 2) return <Redirect to="/customer" />;
+    return <Redirect to="/403" />;
   }
 
   return (
-    <div className="auth-wrapper d-flex no-block justify-content-center align-items-center position-relative"
-         style={{ background: 'url(../assets/images/big/auth-bg.jpg) no-repeat center center' }}>
+    <div
+      className="auth-wrapper d-flex no-block justify-content-center align-items-center position-relative"
+      style={{
+        background: 'url(../assets/images/big/auth-bg.jpg) no-repeat center center',
+        backgroundSize: 'cover'
+      }}
+    >
       <div className="auth-box row">
-        <div className="col-lg-7 col-md-5 modal-bg-img" style={{ backgroundImage: 'url(../assets/images/big/3.jpg)' }} />
+        <div
+          className="col-lg-7 col-md-5 modal-bg-img"
+          style={{ backgroundImage: 'url(../assets/images/big/3.jpg)' }}
+        ></div>
+
         <div className="col-lg-5 col-md-7 bg-white">
           <div className="p-3">
             <div className="text-center">
-              <img src="../assets/images/big/icon.png" alt="wrapkit" />
+              <img src="../assets/images/big/icon.png" alt="icon" />
             </div>
+
             <h2 className="mt-3 text-center">Sign In</h2>
 
-            {validationMsg.api && <p className="form-text text-danger">{validationMsg.api}</p>}
+            {validationMsg.api && (
+              <p className="form-text text-danger text-center">
+                {validationMsg.api}
+              </p>
+            )}
 
-            <form className="mt-4" onSubmit={(e) => { e.preventDefault(); login(); }}>
+            <form
+              className="mt-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                login();
+              }}
+            >
               <div className="row">
                 <div className="col-lg-12">
-                  <div className="form-group">
-                    <label htmlFor="identifier">Email / Username</label>
-                    <input
-                      className="form-control"
-                      name="identifier"
-                      type="text"
-                      placeholder="Nhập email hoặc username"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                    />
-                    {validationMsg.identifier && <p className="form-text text-danger">{validationMsg.identifier}</p>}
-                  </div>
+                  <label>Email / Username</label>
+                  <input
+                    className="form-control"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                  />
+                  {validationMsg.identifier && (
+                    <p className="form-text text-danger">
+                      {validationMsg.identifier}
+                    </p>
+                  )}
                 </div>
 
                 <div className="col-lg-12">
-                  <div className="form-group">
-                    <label htmlFor="password">Password</label>
-                    <input
-                      className="form-control"
-                      name="password"
-                      type="password"
-                      placeholder="Nhập mật khẩu"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    {validationMsg.password && <p className="form-text text-danger">{validationMsg.password}</p>}
-                  </div>
+                  <label>Password</label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  {validationMsg.password && (
+                    <p className="form-text text-danger">
+                      {validationMsg.password}
+                    </p>
+                  )}
                 </div>
 
-                <div className="col-lg-12 text-center">
-                  <button type="submit" className="btn btn-block btn-dark" disabled={loading}>
+                <div className="col-lg-12 text-center mt-3">
+                  <button
+                    type="submit"
+                    className="btn btn-dark btn-block"
+                    disabled={loading}
+                  >
                     {loading ? 'Đang đăng nhập...' : 'Sign In'}
                   </button>
                 </div>
