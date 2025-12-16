@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Product from '../../component/Product/Product';
-import productAPI from '../../component/Api/productAPI';
+import productAPI from '../../API/Product';
 
-jest.mock('../../component/Api/productAPI');
+jest.mock('../../API/Product');
 
 describe('Admin Product Management', () => {
   const mockProducts = [

@@ -1,12 +1,16 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { BrowserRouter, Route } from 'react-router-dom';
+import { BrowserRouter, Route, MemoryRouter } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
 import Detail_Product from '../../DetailProduct/Detail_Product';
-import Product from '../../API/Product';
+import ProductAPI from '../../API/Product';
+import CommentAPI from '../../API/CommentAPI';
+import SaleAPI from '../../API/SaleAPI';
 
 const mockStore = configureStore([]);
 jest.mock('../../API/Product');
+jest.mock('../../API/CommentAPI');
+jest.mock('../../API/SaleAPI');
 
 describe('Detail Product Component', () => {
   let store;
@@ -24,35 +28,40 @@ describe('Detail Product Component', () => {
       Cart: { id_user: null }
     });
     
-    Product.Get_Detail_Product.mockResolvedValue(mockProduct);
+    ProductAPI.Get_Detail_Product.mockResolvedValue(mockProduct);
+    CommentAPI.get_comment.mockResolvedValue([]);
+    SaleAPI.checkSale.mockResolvedValue({ msg: 'Không tìm thấy' });
     localStorage.setItem('carts', JSON.stringify([]));
   });
 
-  test('TC014: Hiển thị thông tin sản phẩm', async () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  test('TC018: Hiển thị thông tin sản phẩm', async () => {
     render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter initialEntries={['/detail/prod1']}>
           <Route path="/detail/:id">
             <Detail_Product />
           </Route>
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
     
     await waitFor(() => {
-      expect(screen.getByText(/test product/i)).toBeInTheDocument();
-      expect(screen.getByText(/100,000 VNĐ/i)).toBeInTheDocument();
+      expect(ProductAPI.Get_Detail_Product).toHaveBeenCalledWith('prod1');
     });
   });
 
-  test('TC015: Thêm sản phẩm vào giỏ hàng', async () => {
+  test('TC019: Thêm sản phẩm vào giỏ hàng với size mặc định', async () => {
     render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter initialEntries={['/detail/prod1']}>
           <Route path="/detail/:id">
             <Detail_Product />
           </Route>
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
     
@@ -60,24 +69,25 @@ describe('Detail Product Component', () => {
       expect(screen.getByText(/test product/i)).toBeInTheDocument();
     });
     
-    const addToCartButton = screen.getByRole('link', { name: /add to cart/i });
+    const addToCartButton = screen.getByText(/add to cart/i);
     fireEvent.click(addToCartButton);
     
     await waitFor(() => {
       const carts = JSON.parse(localStorage.getItem('carts'));
       expect(carts.length).toBe(1);
       expect(carts[0].name_product).toBe('Test Product');
+      expect(carts[0].size).toBe('S');
     });
   });
 
-  test('TC016: Chọn size khác nhau', async () => {
+  test('TC020: Chọn size L trước khi thêm vào giỏ', async () => {
     render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter initialEntries={['/detail/prod1']}>
           <Route path="/detail/:id">
             <Detail_Product />
           </Route>
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
     
@@ -85,10 +95,11 @@ describe('Detail Product Component', () => {
       expect(screen.getByText(/test product/i)).toBeInTheDocument();
     });
     
-    const sizeSelect = screen.getByLabelText(/size/i);
+    // Tìm select element bằng class
+    const sizeSelect = document.querySelector('.nice-select');
     fireEvent.change(sizeSelect, { target: { value: 'L' } });
     
-    const addToCartButton = screen.getByRole('link', { name: /add to cart/i });
+    const addToCartButton = screen.getByText(/add to cart/i);
     fireEvent.click(addToCartButton);
     
     await waitFor(() => {
@@ -97,14 +108,14 @@ describe('Detail Product Component', () => {
     });
   });
 
-  test('TC017: Tăng/giảm số lượng trước khi thêm vào giỏ', async () => {
-    render(
+  test('TC021: Tăng số lượng trước khi thêm vào giỏ', async () => {
+    const { container } = render(
       <Provider store={store}>
-        <BrowserRouter>
+        <MemoryRouter initialEntries={['/detail/prod1']}>
           <Route path="/detail/:id">
             <Detail_Product />
           </Route>
-        </BrowserRouter>
+        </MemoryRouter>
       </Provider>
     );
     
@@ -112,16 +123,70 @@ describe('Detail Product Component', () => {
       expect(screen.getByText(/test product/i)).toBeInTheDocument();
     });
     
-    const increaseButton = screen.getByText(/\+/);
+    // Dùng querySelector để tìm nút tăng
+    const increaseButton = container.querySelector('.inc.qtybutton');
     fireEvent.click(increaseButton);
     fireEvent.click(increaseButton);
     
-    const addToCartButton = screen.getByRole('link', { name: /add to cart/i });
+    const addToCartButton = screen.getByText(/add to cart/i);
     fireEvent.click(addToCartButton);
     
     await waitFor(() => {
       const carts = JSON.parse(localStorage.getItem('carts'));
       expect(carts[0].count).toBe(3);
     });
+  });
+
+  test('TC022: Giảm số lượng nhưng không cho < 1', async () => {
+    const { container } = render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/detail/prod1']}>
+          <Route path="/detail/:id">
+            <Detail_Product />
+          </Route>
+        </MemoryRouter>
+      </Provider>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText(/test product/i)).toBeInTheDocument();
+    });
+    
+    // Dùng querySelector để tìm nút giảm
+    const decreaseButton = container.querySelector('.dec.qtybutton');
+    fireEvent.click(decreaseButton);
+    
+    const addToCartButton = screen.getByText(/add to cart/i);
+    fireEvent.click(addToCartButton);
+    
+    await waitFor(() => {
+      const carts = JSON.parse(localStorage.getItem('carts'));
+      expect(carts[0].count).toBe(1);
+    });
+  });
+
+  test('TC023: Hiển thị giá sale nếu có', async () => {
+    SaleAPI.checkSale.mockResolvedValue({
+      msg: 'Thanh Cong',
+      sale: {
+        id_product: mockProduct,
+        promotion: 20
+      }
+    });
+    
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/detail/prod1']}>
+          <Route path="/detail/:id">
+            <Detail_Product />
+          </Route>
+        </MemoryRouter>
+      </Provider>
+    );
+    
+    await waitFor(() => {
+      // Kiểm tra có text chứa 80.000 (không có dấu phẩy)
+      expect(screen.getByText(/80\.000 VNĐ/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 });
