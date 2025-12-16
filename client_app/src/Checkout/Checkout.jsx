@@ -397,7 +397,7 @@ function Checkout(props) {
                                                     value={information.address}
                                                     onChange={onChangeAddress} />
                                                 {error_address && <span style={{ color: 'red' }}>* Address is required</span>}
-                                                <input id="destination" type="text" name="destination" required="" type="hidden" />
+                                                <input id="destination" type="text" name="destination" required=""/>
                                             </div>
                                         </div>
                                         <div className="col-md-12">
