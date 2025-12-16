@@ -12,6 +12,7 @@
   "name": "cnpm-shopping-master",
   "private": true,
   "scripts": {
+    "e2e": "playwright test",
     "test:usability": "node Non-functional-Testing/usability-test.js",
     "test:performance": "artillery run Non-functional-Testing/performance-test/performance-test.yml",
     "test": "react-scripts test",
@@ -21,6 +22,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\" \"npm run admin\""
   },
   "devDependencies": {
-    "concurrently": "^7.6.0"
+    "concurrently": "^7.6.0",
+    "@playwright/test": "^1.44.0"
   }
 }
