@@ -1,23 +1,60 @@
+import { getPool } from "../../config/db.js";
 
-const Detail_Order = require('../../Models/detail_order')
+/* =========================
+   GET: CHI TIẾT HÓA ĐƠN
+========================= */
+export const detail = async (req, res) => {
+    try {
+        const id_order = req.params.id;
+        const pool = await getPool();
 
-// Hiển thị chi tiết hóa đơn
-// Phương thức GET
-module.exports.detail = async (req, res) => {
+        const result = await pool.request()
+            .input("id_order", id_order)
+            .query(`
+                SELECT 
+                    d.*,
+                    p.name_product,
+                    p.price_product,
+                    p.image
+                FROM Detail_Orders d
+                JOIN Products p ON d.id_product = p.id
+                WHERE d.id_order = @id_order
+            `);
 
-    const id_order = req.params.id
+        res.json(result.recordset);
 
-    const detail_order = await Detail_Order.find({ id_order: id_order }).populate('id_product')
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-    res.json(detail_order)
+/* =========================
+   POST: THÊM CHI TIẾT HÓA ĐƠN
+========================= */
+export const post_detail_order = async (req, res) => {
+    try {
+        const {
+            id_order,
+            id_product,
+            quantity,
+            price
+        } = req.body;
 
-}
+        const pool = await getPool();
 
-// Phuong Thuc Post
-module.exports.post_detail_order = async (req, res) => {
+        await pool.request()
+            .input("id_order", id_order)
+            .input("id_product", id_product)
+            .input("quantity", quantity)
+            .input("price", price)
+            .query(`
+                INSERT INTO Detail_Orders (id_order, id_product, quantity, price)
+                VALUES (@id_order, @id_product, @quantity, @price)
+            `);
 
-    const detail_order = await Detail_Order.create(req.body)
+        res.send("Thanh Cong");
 
-    res.send("Thanh Cong")
-
-}
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

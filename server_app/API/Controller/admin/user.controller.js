@@ -1,134 +1,184 @@
-const User = require('../../../Models/user')
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+import { getPool } from "../../config/db.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import sql from "mssql";
 
-module.exports.index = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
+/* =========================
+   LẤY DANH SÁCH USER (PAGINATION + SEARCH)
+========================= */
+export const index = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const offset = (page - 1) * limit;
+    const search = req.query.search || "";
+    const permission = req.query.permission;
 
-    const perPage = parseInt(req.query.limit) || 8;
-    const totalPage = Math.ceil(await User.countDocuments() / perPage);
+    const pool = await getPool();
 
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
-    let users;
-    if (req.query.permission) {
-        users = await User.find({ id_permission: req.query.permission }).populate('id_permission')
-    } else {
-        users = await User.find({}).populate('id_permission')
+    let whereSql = "WHERE 1=1";
+    if (permission) whereSql += " AND U.id_permission = @permission";
+    if (search) whereSql += " AND (U.fullname LIKE @search OR U.username LIKE @search)";
+
+    const countResult = await pool.request()
+      .input("permission", sql.Int, permission || 0)
+      .input("search", sql.NVarChar, `%${search}%`)
+      .query(`SELECT COUNT(*) AS total FROM UserAccount U ${whereSql}`);
+
+    const totalPage = Math.ceil(countResult.recordset[0].total / limit);
+
+    const result = await pool.request()
+      .input("permission", sql.Int, permission || 0)
+      .input("search", sql.NVarChar, `%${search}%`)
+      .input("limit", sql.Int, limit)
+      .input("offset", sql.Int, offset)
+      .query(`
+        SELECT U.*, P.name AS permission_name
+        FROM UserAccount U
+        LEFT JOIN Permission P ON P.id = U.id_permission
+        ${whereSql}
+        ORDER BY U._id DESC
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY
+      `);
+
+    res.json({ users: result.recordset, totalPage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* =========================
+   TẠO USER
+========================= */
+export const create = async (req, res) => {
+  try {
+    const { username, password, fullname, email, id_permission } = req.body;
+    const pool = await getPool();
+
+    const check = await pool.request()
+      .input("username", sql.NVarChar, username)
+      .input("email", sql.NVarChar, email)
+      .query(`SELECT * FROM UserAccount WHERE username = @username OR email = @email`);
+
+    if (check.recordset.length > 0) {
+      return res.status(400).json({ error: "Username hoặc email đã tồn tại" });
     }
 
+    const hash = await bcrypt.hash(password, 10);
 
-    if (!keyWordSearch) {
-        res.json({
-            users: users.slice(start, end),
-            totalPage: totalPage
-        })
+    await pool.request()
+      .input("username", sql.NVarChar, username)
+      .input("password", sql.NVarChar, hash)
+      .input("fullname", sql.NVarChar, fullname)
+      .input("email", sql.NVarChar, email)
+      .input("id_permission", sql.Int, id_permission || 1)
+      .query(`
+        INSERT INTO UserAccount (username, password, fullname, email, id_permission)
+        VALUES (@username, @password, @fullname, @email, @id_permission)
+      `);
 
-    } else {
-        var newData = users.filter(value => {
-            return value.fullname.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.id.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
+    res.status(201).json({ message: "Tạo user thành công" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
-        res.json({
-            users: newData.slice(start, end),
-            totalPage: totalPage
-        })
-    }
-}
+/* =========================
+   LOGIN
+========================= */
+export const login = async (req, res) => {
+  try {
+    const { usernameOrEmail, password } = req.body;
+    const pool = await getPool();
 
-module.exports.create = async (req, res) => {
-    const user = await User.find();
+    const result = await pool.request()
+      .input("usernameOrEmail", sql.NVarChar, usernameOrEmail)
+      .query(`
+        SELECT U.*, P.name AS permission_name
+        FROM UserAccount U
+        LEFT JOIN Permission P ON P.id = U.id_permission
+        WHERE U.username = @usernameOrEmail OR U.email = @usernameOrEmail
+      `);
 
-    const userFilter = user.filter((c) => {
-        return c.email === req.query.email.trim() || c.username === req.query.username.trim()
-    });
-
-    if (userFilter.length > 0) {
-        res.json({ msg: 'Email hoặc username đã tồn tại' })
-    } else {
-        var newUser = new User()
-        const salt = await bcrypt.genSalt();
-        req.query.password = await bcrypt.hash(req.query.password, salt);
-        req.query.name = req.query.name.toLowerCase().replace(/^.|\s\S/g, a => { return a.toUpperCase() })
-        newUser.fullname = req.query.name
-        newUser.username = req.query.username
-        newUser.password = req.query.password
-        if (req.query.permission) {
-            newUser.id_permission = "6087dcb5f269113b3460fce4"
-        } else newUser.id_permission = req.query.permission
-        newUser.email = req.query.email
-
-        newUser.save();
-        res.json({ msg: "Bạn đã thêm thành công" })
-    }
-}
-
-module.exports.delete = async (req, res) => {
-    const id = req.query.id;
-
-    await User.deleteOne({ _id: id }, (err) => {
-        if (err) {
-            res.json({ msg: err })
-            return;
-        }
-        res.json({ msg: "Thanh Cong" })
-    })
-
-}
-
-module.exports.details = async (req, res) => {
-    const user = await User.findOne({ _id: req.params.id });
-
-    res.json(user)
-}
-
-module.exports.update = async (req, res) => {
-    const user = await User.findOne({ _id: req.query.id });
-    if (req.query.email && req.query.email !== user.email) {
-        req.query.email = user.email
-    }
-    if (req.query.username && req.query.username !== user.username) {
-        req.query.username = user.username
-    }
-    if (!req.query.password) {
-        req.query.password = user.password;
-    } else {
-        const salt = await bcrypt.genSalt();
-        req.query.password = await bcrypt.hash(req.query.password, salt);
+    if (result.recordset.length === 0) {
+      return res.status(401).json({ error: "Không tìm thấy user" });
     }
 
-    req.query.name = req.query.name.toLowerCase().replace(/^.|\s\S/g, a => { return a.toUpperCase() })
-    await User.updateOne({ _id: req.query.id }, {
-        fullname: req.query.name,
-        password: req.query.password,
-        id_permission: req.query.permission
-    }, function (err, res) {
-        if (err) return res.json({ msg: err });
-    });
-    res.json({ msg: "Bạn đã update thành công" })
-}
+    const user = result.recordset[0];
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) return res.status(401).json({ error: "Sai mật khẩu" });
 
-module.exports.login = async (req, res) => {
+    const token = jwt.sign(
+      { id: user._id, id_permission: user.id_permission },
+      process.env.JWT_SECRET || "secretkey",
+      { expiresIn: "1d" }
+    );
 
-    const email = req.body.email
-    const password = req.body.password
+    delete user.password;
+    res.json({ user, token });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
-    const body = [{ username: email }, { email: email }]
+/* =========================
+   UPDATE USER
+========================= */
+export const update = async (req, res) => {
+  try {
+    const { _id, username, password, fullname, email, id_permission } = req.body;
+    const pool = await getPool();
 
-    const user = await User.findOne({ $or: body }).populate('id_permission')
+    let query = `
+      UPDATE UserAccount
+      SET username = @username,
+          fullname = @fullname,
+          email = @email,
+          id_permission = @id_permission
+    `;
 
-    if (user === null) {
-        res.json({ msg: "Không Tìm Thấy User" })
+    const request = pool.request()
+      .input("_id", sql.Int, _id)
+      .input("username", sql.NVarChar, username)
+      .input("fullname", sql.NVarChar, fullname)
+      .input("email", sql.NVarChar, email)
+      .input("id_permission", sql.Int, id_permission);
+
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      query += ", password = @password";
+      request.input("password", sql.NVarChar, hash);
     }
-    else {
-        const auth = await bcrypt.compare(password, user.password)
-        if (auth) {
-            var token = jwt.sign(user._id.toJSON(), 'gfdgfd');
-            res.json({ msg: "Đăng nhập thành công", user: user, jwt: token })
-        } else {
-            res.json({ msg: "Sai mật khẩu" })
-        }
-    }
-}
+
+    query += " WHERE _id = @_id";
+
+    await request.query(query);
+    res.json({ message: "Cập nhật user thành công" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* =========================
+   DELETE USER
+========================= */
+export const remove = async (req, res) => {
+  try {
+    const { _id } = req.body;
+    const pool = await getPool();
+
+    await pool.request()
+      .input("_id", sql.Int, _id)
+      .query("DELETE FROM UserAccount WHERE _id = @_id");
+
+    res.json({ message: "Xóa user thành công" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

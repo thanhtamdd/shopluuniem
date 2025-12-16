@@ -1,10 +1,29 @@
-var express = require('express')
+import express from "express";
+import { getPool } from "../../config/db.js";
 
-var router = express.Router()
+const router = express.Router();
 
-const Category = require('../Controller/category.controller')
+/**
+ * Lấy sản phẩm theo giới tính
+ * /api/Product/category/gender?gender=male
+ */
+router.get("/category/gender", async (req, res) => {
+    try {
+        const { gender } = req.query;
+        const pool = getPool();
 
-router.get('/', Category.index)
+        const result = await pool.request()
+            .input("gender", gender)
+            .query(`
+                SELECT *
+                FROM Products
+                WHERE Gender = @gender
+            `);
 
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-module.exports = router
+export default router;

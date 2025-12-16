@@ -1,18 +1,21 @@
-var mongoose = require('mongoose');
+import FavoriteModel from "../../Models/favorite.model.js";
 
-var schema = new mongoose.Schema(
-    {
-        id_user: {
-            type: String,
-            ref: 'Users'
-        },
-        id_product: {
-            type: String.apply,
-            ref: 'Products'
-        }
-    }
-);
+// GET danh sách yêu thích theo user
+export const index = async (req, res) => {
+  const id_user = req.params.id;
+  const data = await FavoriteModel.findByUser(id_user);
+  res.json(data);
+};
 
-var Favorite = mongoose.model('Favorite', schema, 'favorite');
+// POST thêm yêu thích
+export const add = async (req, res) => {
+  await FavoriteModel.create(req.body);
+  res.send("Thanh Cong");
+};
 
-module.exports = Favorite;
+// DELETE bỏ yêu thích
+export const remove = async (req, res) => {
+  const { id_user, id_product } = req.body;
+  await FavoriteModel.remove(id_user, id_product);
+  res.send("Thanh Cong");
+};

@@ -1,107 +1,176 @@
-const Sale = require('../../../Models/sale')
+import { getPool } from "../../../config/db.js";
 
+/* =========================
+   GET LIST + PAGINATION
+========================= */
+export const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const search = req.query.search;
+        const limit = parseInt(req.query.limit) || 8;
+        const offset = (page - 1) * limit;
 
-module.exports.index = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
+        const pool = await getPool();
 
-    const perPage = parseInt(req.query.limit) || 8;
-    const totalPage = Math.ceil(await Sale.countDocuments() / perPage);
+        let whereSql = "";
+        if (search) {
+            whereSql = "WHERE CAST(S.id AS NVARCHAR) LIKE @search";
+        }
 
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
+        const countResult = await pool.request()
+            .input("search", `%${search}%`)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM Sale S
+                ${whereSql}
+            `);
 
-    const sale = await Sale.find().populate('id_product');
+        const totalPage = Math.ceil(countResult.recordset[0].total / limit);
 
-    if (!keyWordSearch) {
+        const result = await pool.request()
+            .input("search", `%${search}%`)
+            .input("limit", limit)
+            .input("offset", offset)
+            .query(`
+                SELECT S.*, P.name_product, P.image
+                FROM Sale S
+                JOIN Product P ON P.id = S.product_id
+                ${whereSql}
+                ORDER BY S.id DESC
+                OFFSET @offset ROWS
+                FETCH NEXT @limit ROWS ONLY
+            `);
+
         res.json({
-            sale: sale.slice(start, end),
-            totalPage: totalPage
-        })
+            sale: result.recordset,
+            totalPage
+        });
 
-    } else {
-        var newData = sale.filter(value => {
-            return value.id.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
-
-        res.json({
-            sale: newData.slice(start, end),
-            totalPage: totalPage
-        })
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-}
+};
 
-module.exports.create = async (req, res) => {
+/* =========================
+   CREATE
+========================= */
+export const create = async (req, res) => {
+    try {
+        const { product_id, promotion, describe, status } = req.body;
+        const pool = await getPool();
 
-    const check = await Sale.find({ id_product: req.body.id_product })
+        // check active sale exists
+        const check = await pool.request()
+            .input("product_id", product_id)
+            .query(`
+                SELECT *
+                FROM Sale
+                WHERE product_id = @product_id
+                  AND status = 1
+            `);
 
-    let flag = false
+        if (check.recordset.length > 0) {
+            return res.send("Sản phẩm này đã có khuyến mãi");
+        }
 
-    check.forEach(value => {
-        if (value.status === true){
-            flag = true
-        } 
-    })
+        await pool.request()
+            .input("product_id", product_id)
+            .input("promotion", promotion)
+            .input("describe", describe)
+            .input("status", status)
+            .query(`
+                INSERT INTO Sale (product_id, promotion, describe, status)
+                VALUES (@product_id, @promotion, @describe, @status)
+            `);
 
-    if (flag){
-        res.send("Sản phẩm này đã có khuyến mãi")
-    }else{
-        await Sale.create(req.body)
+        res.send("Bạn đã thêm thành công");
 
-        res.send("Bạn đã thêm thành công")
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-}
+/* =========================
+   DETAIL
+========================= */
+export const detail = async (req, res) => {
+    const pool = await getPool();
 
-module.exports.detail = async (req, res) => {
+    const result = await pool.request()
+        .input("id", req.params.id)
+        .query("SELECT * FROM Sale WHERE id = @id");
 
-    const id = req.params.id
+    res.json(result.recordset[0]);
+};
 
-    const sale = await Sale.findOne({ _id: id })
+/* =========================
+   UPDATE
+========================= */
+export const update = async (req, res) => {
+    try {
+        const { promotion, describe, status, product_id } = req.body;
+        const pool = await getPool();
 
-    res.json(sale)
+        await pool.request()
+            .input("id", req.params.id)
+            .input("promotion", promotion)
+            .input("describe", describe)
+            .input("status", status)
+            .input("product_id", product_id)
+            .query(`
+                UPDATE Sale
+                SET promotion = @promotion,
+                    describe = @describe,
+                    status = @status,
+                    product_id = @product_id
+                WHERE id = @id
+            `);
 
-}
+        res.json("Bạn đã cập nhật thành công");
 
-module.exports.update = async (req, res) => {
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-    const id = req.params.id
+/* =========================
+   LIST ACTIVE SALE
+========================= */
+export const list = async (req, res) => {
+    const pool = await getPool();
 
-    const sale = await Sale.findOne({ _id: id })
+    const result = await pool.query(`
+        SELECT S.*, P.name_product, P.image
+        FROM Sale S
+        JOIN Product P ON P.id = S.product_id
+        WHERE S.status = 1
+    `);
 
-    sale.promotion = req.body.promotion
-    sale.describe = req.body.describe
-    sale.status = req.body.status
-    sale.id_product = req.body.id_product
+    res.json(result.recordset);
+};
 
-    sale.save()
+/* =========================
+   DETAIL ACTIVE SALE BY PRODUCT
+========================= */
+export const detailList = async (req, res) => {
+    const pool = await getPool();
 
-    res.json("Bạn đã cập nhật thành công")
+    const result = await pool.request()
+        .input("product_id", req.params.id)
+        .query(`
+            SELECT TOP 1 S.*, P.name_product, P.image
+            FROM Sale S
+            JOIN Product P ON P.id = S.product_id
+            WHERE S.product_id = @product_id
+              AND S.status = 1
+        `);
 
-}
-
-module.exports.list = async (req, res) => {
-
-    const sale = await Sale.find({ status: true }).populate('id_product')
-
-    res.json(sale)
-
-}
-
-module.exports.detailList = async (req, res) => {
-
-    const id = req.params.id
-
-    const sale = await (await Sale.findOne({ id_product: id, status: true }).populate('id_product'));
-
-    if (sale){
+    if (result.recordset.length > 0) {
         res.json({
             msg: "Thanh Cong",
-            sale: sale
-        })
-    }else{
-        res.json({
-            msg: "That Bai"
-        })
+            sale: result.recordset[0]
+        });
+    } else {
+        res.json({ msg: "That Bai" });
     }
-}
+};

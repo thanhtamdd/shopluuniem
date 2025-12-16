@@ -1,156 +1,217 @@
-const Order = require('../../../Models/order')
-const Detail_History = require('../../../Models/detail_order')
-const Payment = require('../../../Models/payment')
-const Delivery = require('../../../Models/delivery')
+import { getPool, sql } from "../../../config/db.js";
 
-module.exports.index = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    let money = 0;
+/**
+ * GET /api/admin/Order
+ * List order + filter status + total money
+ */
+export const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const status = req.query.status;
+        const offset = (page - 1) * limit;
 
-    const status = req.query.status
+        const pool = await getPool();
 
-    const perPage = parseInt(req.query.limit) || 8;
+        const whereClause = status ? `WHERE o.Status = @status` : "";
 
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
+        const totalResult = await pool.request()
+            .input("status", sql.NVarChar, status)
+            .query(`
+                SELECT COUNT(*) AS total, SUM(Total) AS totalMoney
+                FROM Orders o
+                ${whereClause}
+            `);
 
-    let orders
-    if (status) {
-        orders = await (await Order.find({ status: status }).populate('id_user').populate('id_payment').populate('id_note')).reverse();
-    } else {
-        orders = await (await Order.find().populate('id_user').populate('id_note').populate('id_payment')).reverse();
+        const totalPage = Math.ceil(totalResult.recordset[0].total / limit);
+
+        const orders = await pool.request()
+            .input("status", sql.NVarChar, status)
+            .input("limit", sql.Int, limit)
+            .input("offset", sql.Int, offset)
+            .query(`
+                SELECT o.*, u.FullName, p.Method, n.Content
+                FROM Orders o
+                LEFT JOIN Users u ON o.UserID = u.UserID
+                LEFT JOIN Payments p ON o.PaymentID = p.PaymentID
+                LEFT JOIN Notes n ON o.NoteID = n.NoteID
+                ${whereClause}
+                ORDER BY o.OrderID DESC
+                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+            `);
+
+        res.json({
+            orders: orders.recordset,
+            totalPage,
+            totalMoney: totalResult.recordset[0].totalMoney || 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-    const totalPage = Math.ceil(orders.length / perPage);
+/**
+ * GET /api/admin/Order/detailorder/:id
+ */
+export const detailOrder = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const search = req.query.search || "";
+        const offset = (page - 1) * limit;
 
-    orders.map((value) => {
-        money += Number(value.total);
-    })
+        const pool = await getPool();
 
-    res.json({
-        orders: orders.slice(start, end),
-        totalPage: totalPage,
-        totalMoney: money
-    })
+        const count = await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM OrderDetails
+                WHERE OrderID = @id
+            `);
 
-   
-}
+        const totalPage = Math.ceil(count.recordset[0].total / limit);
 
-module.exports.detailOrder = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
+        const details = await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .input("search", sql.NVarChar, `%${search}%`)
+            .input("limit", sql.Int, limit)
+            .input("offset", sql.Int, offset)
+            .query(`
+                SELECT *
+                FROM OrderDetails
+                WHERE OrderID = @id
+                  AND (
+                      NameProduct LIKE @search OR
+                      CAST(PriceProduct AS NVARCHAR) LIKE @search OR
+                      CAST(Count AS NVARCHAR) LIKE @search OR
+                      Size LIKE @search
+                  )
+                ORDER BY DetailID DESC
+                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+            `);
 
-    const perPage = parseInt(req.query.limit) || 8;
-
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
-
-    const details = await Detail_History.find({ id_order: req.params.id }).populate('id_order').populate('id_product');
-
-    const totalPage = Math.ceil(details.length / perPage);
-
-    if (!keyWordSearch) {
         res.json({
-            details: details.slice(start, end),
-            totalPage: totalPage
-        })
-    } else {
-        var newData = details.filter(value => {
-            return value.name_product.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.price_product.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.count.toString().toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.size.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
-
-        res.json({
-            details: newData.slice(start, end),
-            totalPage: totalPage
-        })
+            details: details.recordset,
+            totalPage
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-}
+};
 
-module.exports.details = async (req, res) => {
-    const order = await Order.findOne({ _id: req.params.id }).populate('id_user').populate('id_payment').populate('id_note');
+/**
+ * GET /api/admin/Order/detail/:id
+ */
+export const details = async (req, res) => {
+    try {
+        const pool = await getPool();
 
-    res.json(order)
+        const result = await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .query(`
+                SELECT o.*, u.FullName, p.Method, n.Content
+                FROM Orders o
+                LEFT JOIN Users u ON o.UserID = u.UserID
+                LEFT JOIN Payments p ON o.PaymentID = p.PaymentID
+                LEFT JOIN Notes n ON o.NoteID = n.NoteID
+                WHERE o.OrderID = @id
+            `);
 
-}
-
-module.exports.confirmOrder = async (req, res) => {
-    await Order.updateOne({ _id: req.query.id }, { status: "2" }, function (err, res) {
-        if (err) return res.json({ msg: err });
-    });
-    res.json({ msg: "Thanh Cong" })
-}
-
-module.exports.delivery = async (req, res) => {
-    await Order.updateOne({ _id: req.query.id }, { status: "3" }, function (err, res) {
-        if (err) return res.json({ msg: err });
-    });
-    res.json({ msg: "Thanh Cong" })
-}
-
-module.exports.confirmDelivery = async (req, res) => {
-    await Order.updateOne({ _id: req.query.id }, { status: "4", pay: true }, function (err, res) {
-        if (err) return res.json({ msg: err });
-    });
-    res.json({ msg: "Thanh Cong" })
-}
-
-module.exports.cancelOrder = async (req, res) => {
-    await Order.updateOne({ _id: req.query.id }, { status: "5" }, function (err, res) {
-        if (err) return res.json({ msg: err });
-    });
-    res.json({ msg: "Thanh Cong" })
-}
-
-
-module.exports.completeOrder = async (req, res) => {
-
-    let page = parseInt(req.query.page) || 1;
-    let money = 0;
-
-    const getDate = req.query.getDate
-
-    const perPage = parseInt(req.query.limit) || 8;
-
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
-
-    const orders = await (await Order.find({ status: '4' }).populate('id_user').populate('id_payment').populate('id_note')).reverse();
-
-    if(!getDate){
-
-        const totalPage = Math.ceil(orders.length / perPage);
-
-        orders.map((value) => {
-            money += Number(value.total);
-        })
-
-        res.json({
-            orders: orders.slice(start, end),
-            totalPage: totalPage,
-            totalMoney: money
-        })
-
-    }else{
-
-        const newOrder = orders.filter(value => {
-            return value.create_time.toString().indexOf(getDate.toString()) !== -1
-        })
-
-        const totalPage = Math.ceil(newOrder.length / perPage);
-
-        newOrder.map((value) => {
-            money += Number(value.total);
-        })
-
-        res.json({
-            orders: newOrder.slice(start, end),
-            totalPage: totalPage,
-            totalMoney: money
-        })
-
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-}
+/* ===== STATUS UPDATE ===== */
+
+export const confirmOrder = async (req, res) => {
+    await updateStatus(req, res, "2");
+};
+
+export const delivery = async (req, res) => {
+    await updateStatus(req, res, "3");
+};
+
+export const confirmDelivery = async (req, res) => {
+    try {
+        const pool = await getPool();
+        await pool.request()
+            .input("id", sql.Int, req.query.id)
+            .query(`
+                UPDATE Orders
+                SET Status = '4', Pay = 1
+                WHERE OrderID = @id
+            `);
+        res.json({ msg: "Thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const cancelOrder = async (req, res) => {
+    await updateStatus(req, res, "5");
+};
+
+const updateStatus = async (req, res, status) => {
+    try {
+        const pool = await getPool();
+        await pool.request()
+            .input("id", sql.Int, req.query.id)
+            .input("status", sql.NVarChar, status)
+            .query(`
+                UPDATE Orders SET Status = @status
+                WHERE OrderID = @id
+            `);
+        res.json({ msg: "Thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * GET /api/admin/Order/completeOrder
+ */
+export const completeOrder = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const getDate = req.query.getDate;
+        const offset = (page - 1) * limit;
+
+        const pool = await getPool();
+
+        let whereDate = getDate ? "AND CONVERT(date, CreatedAt) = @date" : "";
+
+        const count = await pool.request()
+            .input("date", sql.Date, getDate)
+            .query(`
+                SELECT COUNT(*) AS total, SUM(Total) AS totalMoney
+                FROM Orders
+                WHERE Status = '4' ${whereDate}
+            `);
+
+        const totalPage = Math.ceil(count.recordset[0].total / limit);
+
+        const orders = await pool.request()
+            .input("date", sql.Date, getDate)
+            .input("limit", sql.Int, limit)
+            .input("offset", sql.Int, offset)
+            .query(`
+                SELECT *
+                FROM Orders
+                WHERE Status = '4' ${whereDate}
+                ORDER BY OrderID DESC
+                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+            `);
+
+        res.json({
+            orders: orders.recordset,
+            totalPage,
+            totalMoney: count.recordset[0].totalMoney || 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

@@ -1,12 +1,57 @@
-var express = require('express')
+import express from "express";
+import { getPool } from "../../config/db.js";
 
-var router = express.Router()
+const router = express.Router();
 
-const Detail_Order = require('../Controller/detail_order.controller')
+/**
+ * Hiển thị danh sách chi tiết đơn hàng
+ * GET /api/DetailOrder/:id
+ */
+router.get("/:id", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .input("orderId", req.params.id)
+            .query(`
+                SELECT od.OrderDetailID,
+                       od.Quantity,
+                       od.Price,
+                       p.ProductID,
+                       p.Name,
+                       p.Image
+                FROM OrderDetails od
+                JOIN Products p ON od.ProductID = p.ProductID
+                WHERE od.OrderID = @orderId
+            `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-// Hiển thị danh sách detail
-router.get('/:id', Detail_Order.detail)
+/**
+ * Thêm chi tiết đơn hàng
+ * POST /api/DetailOrder
+ */
+router.post("/", async (req, res) => {
+    try {
+        const { orderId, productId, quantity, price } = req.body;
+        const pool = getPool();
 
-router.post('/', Detail_Order.post_detail_order)
+        await pool.request()
+            .input("orderId", orderId)
+            .input("productId", productId)
+            .input("quantity", quantity)
+            .input("price", price)
+            .query(`
+                INSERT INTO OrderDetails (OrderID, ProductID, Quantity, Price)
+                VALUES (@orderId, @productId, @quantity, @price)
+            `);
 
-module.exports = router
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+export default router;

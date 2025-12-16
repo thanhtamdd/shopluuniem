@@ -1,35 +1,58 @@
+import { getPool } from "../../config/db.js";
 
-const Comment = require('../../Models/comment')
-const Users = require('../../Models/user')
+/* =========================
+   GET COMMENTS BY PRODUCT
+========================= */
+export const index = async (req, res) => {
+    try {
+        const id_product = req.params.id;
+        const pool = await getPool();
 
-// Gọi API hiện thị list comment của sản phẩm 
-// Phương thức GET
-module.exports.index = async (req, res) => {
+        const result = await pool.request()
+            .input("id_product", id_product)
+            .query(`
+                SELECT 
+                    c.id,
+                    c.content,
+                    c.star,
+                    c.created_at,
+                    u.id AS user_id,
+                    u.fullname
+                FROM Comments c
+                JOIN Users u ON c.id_user = u.id
+                WHERE c.id_product = @id_product
+                ORDER BY c.created_at DESC
+            `);
 
-    const id_product = req.params.id
+        res.json(result.recordset);
 
-    const comment_product = await Comment.find({ id_product: id_product }).populate('id_user')
-
-    res.json(comment_product)
-
-}
-
-// Gửi comment
-// Phương Thức Post
-module.exports.post_comment = async (req, res) => {
-
-    const id_product = req.params.id
-
-
-    const data = {
-        id_product: id_product,
-        id_user: req.body.id_user,
-        content: req.body.content,
-        star: req.body.star
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-    await Comment.create(data)
+/* =========================
+   POST COMMENT
+========================= */
+export const post_comment = async (req, res) => {
+    try {
+        const id_product = req.params.id;
+        const { id_user, content, star } = req.body;
+        const pool = await getPool();
 
-    res.send('Thanh Cong')
+        await pool.request()
+            .input("id_product", id_product)
+            .input("id_user", id_user)
+            .input("content", content)
+            .input("star", star)
+            .query(`
+                INSERT INTO Comments (id_product, id_user, content, star)
+                VALUES (@id_product, @id_user, @content, @star)
+            `);
 
-}
+        res.json({ msg: "Thành Công" });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

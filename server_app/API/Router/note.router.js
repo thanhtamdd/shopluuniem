@@ -1,11 +1,51 @@
-var express = require('express')
+import express from "express";
+import { getPool } from "../../config/db.js";
 
-var router = express.Router()
+const router = express.Router();
 
-const Note = require('../Controller/note.controller')
+/**
+ * Tạo ghi chú cho đơn hàng
+ * POST /api/Note
+ */
+router.post("/", async (req, res) => {
+    try {
+        const { orderId, content } = req.body;
+        const pool = getPool();
 
-router.post('/', Note.post_delivery)
+        await pool.request()
+            .input("orderId", orderId)
+            .input("content", content)
+            .query(`
+                INSERT INTO Notes (OrderID, Content)
+                VALUES (@orderId, @content)
+            `);
 
-router.get('/:id', Note.get_delivery)
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-module.exports = router
+/**
+ * Lấy ghi chú theo đơn hàng
+ * GET /api/Note/:id
+ */
+router.get("/:id", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .input("orderId", req.params.id)
+            .query(`
+                SELECT NoteID, Content, CreatedAt
+                FROM Notes
+                WHERE OrderID = @orderId
+                ORDER BY CreatedAt DESC
+            `);
+
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+export default router;

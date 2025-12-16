@@ -1,98 +1,164 @@
-const Permission = require('../../../Models/permission')
+import { getPool } from "../../../config/db.js";
 
-module.exports.index = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
+/* =========================
+   GET: list + pagination + search
+========================= */
+export const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const search = req.query.search;
+        const limit = parseInt(req.query.limit) || 8;
+        const offset = (page - 1) * limit;
 
-    const perPage = parseInt(req.query.limit) || 8;
-    const totalPage = Math.ceil(await Permission.countDocuments() / perPage);
+        const pool = await getPool();
 
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
-
-    const permission = await Permission.find();
-
-
-    if (!keyWordSearch) {
-        res.json({
-            permission: permission.slice(start, end),
-            totalPage: totalPage
-        })
-
-    } else {
-        var newData = permission.filter(value => {
-            return value.permission.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.id.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
-
-        res.json({
-            permission: newData.slice(start, end),
-            totalPage: totalPage
-        })
-    }
-}
-
-module.exports.all = async (req, res) => {
-
-    const permission = await Permission.find()
-
-    res.json(permission)
-
-}
-
-module.exports.create = async (req, res) => {
-    const permission = await Permission.find();
-
-    const permissionFilter = permission.filter((c) => {
-        return c.permission.toUpperCase() === req.query.name.toUpperCase().trim()
-    });
-
-    if (permissionFilter.length > 0) {
-        res.json({ msg: 'Quyền đã tồn tại' })
-    } else {
-        var newPermission = new Permission()
-        req.query.name = req.query.name.toLowerCase().replace(/^.|\s\S/g, a => { return a.toUpperCase() })
-        newPermission.permission = req.query.name
-
-        newPermission.save();
-        res.json({ msg: "Bạn đã thêm thành công" })
-    }
-}
-
-module.exports.delete = async (req, res) => {
-    console.log(req.query)
-    const id = req.query.id;
-
-    await Permission.deleteOne({ _id: id }, (err) => {
-        if (err) {
-            res.json({ msg: err })
-            return;
+        let whereSql = "";
+        if (search) {
+            whereSql = "WHERE permission LIKE @search OR CAST(id AS NVARCHAR) LIKE @search";
         }
-        res.json({ msg: "Thanh Cong" })
-    })
 
-}
+        // count
+        const countResult = await pool.request()
+            .input("search", `%${search}%`)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM Permission
+                ${whereSql}
+            `);
 
-module.exports.details = async (req, res) => {
-    const permission = await Permission.findOne({ _id: req.params.id });
+        const totalPage = Math.ceil(countResult.recordset[0].total / limit);
 
-    res.json(permission)
-}
+        // data
+        const result = await pool.request()
+            .input("search", `%${search}%`)
+            .input("limit", limit)
+            .input("offset", offset)
+            .query(`
+                SELECT *
+                FROM Permission
+                ${whereSql}
+                ORDER BY id
+                OFFSET @offset ROWS
+                FETCH NEXT @limit ROWS ONLY
+            `);
 
-module.exports.update = async (req, res) => {
-    const permission = await Permission.find();
-
-    const permissionFilter = permission.filter((c) => {
-        return c.permission.toUpperCase() === req.query.name.toUpperCase().trim() && c.id !== req.query.id
-    });
-
-    if (permissionFilter.length > 0) {
-        res.json({ msg: 'Quyền đã tồn tại' })
-    } else {
-        req.query.name = req.query.name.toLowerCase().replace(/^.|\s\S/g, a => { return a.toUpperCase() })
-        await Permission.updateOne({ _id: req.query.id }, { permission: req.query.name }, function (err, res) {
-            if (err) return res.json({ msg: err });
+        res.json({
+            permission: result.recordset,
+            totalPage
         });
-        res.json({ msg: "Bạn đã update thành công" })
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-}
+};
+
+/* =========================
+   GET: all
+========================= */
+export const all = async (req, res) => {
+    const pool = await getPool();
+    const result = await pool.request().query("SELECT * FROM Permission");
+    res.json(result.recordset);
+};
+
+/* =========================
+   CREATE
+========================= */
+export const create = async (req, res) => {
+    let name = req.query.name;
+    if (!name) return res.json({ msg: "Thiếu tên quyền" });
+
+    const pool = await getPool();
+
+    const check = await pool.request()
+        .input("name", name)
+        .query(`
+            SELECT * FROM Permission
+            WHERE UPPER(permission) = UPPER(@name)
+        `);
+
+    if (check.recordset.length > 0) {
+        return res.json({ msg: "Quyền đã tồn tại" });
+    }
+
+    name = name
+        .toLowerCase()
+        .replace(/^.|\s\S/g, a => a.toUpperCase());
+
+    await pool.request()
+        .input("permission", name)
+        .query(`
+            INSERT INTO Permission(permission)
+            VALUES (@permission)
+        `);
+
+    res.json({ msg: "Bạn đã thêm thành công" });
+};
+
+/* =========================
+   DELETE
+========================= */
+export const remove = async (req, res) => {
+    const id = req.query.id;
+    if (!id) return res.json({ msg: "Thiếu id" });
+
+    const pool = await getPool();
+    await pool.request()
+        .input("id", id)
+        .query("DELETE FROM Permission WHERE id = @id");
+
+    res.json({ msg: "Thanh Cong" });
+};
+
+/* =========================
+   DETAILS
+========================= */
+export const details = async (req, res) => {
+    const id = req.params.id;
+    const pool = await getPool();
+
+    const result = await pool.request()
+        .input("id", id)
+        .query("SELECT * FROM Permission WHERE id = @id");
+
+    res.json(result.recordset[0]);
+};
+
+/* =========================
+   UPDATE
+========================= */
+export const update = async (req, res) => {
+    let { id, name } = req.query;
+    if (!id || !name) return res.json({ msg: "Thiếu dữ liệu" });
+
+    const pool = await getPool();
+
+    const check = await pool.request()
+        .input("id", id)
+        .input("name", name)
+        .query(`
+            SELECT *
+            FROM Permission
+            WHERE UPPER(permission) = UPPER(@name)
+              AND id <> @id
+        `);
+
+    if (check.recordset.length > 0) {
+        return res.json({ msg: "Quyền đã tồn tại" });
+    }
+
+    name = name
+        .toLowerCase()
+        .replace(/^.|\s\S/g, a => a.toUpperCase());
+
+    await pool.request()
+        .input("id", id)
+        .input("permission", name)
+        .query(`
+            UPDATE Permission
+            SET permission = @permission
+            WHERE id = @id
+        `);
+
+    res.json({ msg: "Bạn đã update thành công" });
+};

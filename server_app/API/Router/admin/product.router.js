@@ -1,17 +1,112 @@
-var express = require('express')
+import express from "express";
+import { getPool } from "../../../config/db.js";
 
-var router = express.Router()
+const router = express.Router();
 
-const Products = require('../../Controller/admin/product.controller')
+/**
+ * Danh sách sản phẩm
+ */
+router.get("/", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .query("SELECT * FROM Products ORDER BY CreatedAt DESC");
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-router.get('/', Products.index)
-router.get('/:id', Products.details)
+/**
+ * Chi tiết sản phẩm
+ */
+router.get("/:id", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .input("id", req.params.id)
+            .query("SELECT * FROM Products WHERE ProductID = @id");
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-router.post('/create', Products.create)
+/**
+ * Tạo sản phẩm
+ */
+router.post("/create", async (req, res) => {
+    try {
+        const { name, price, quantity, description, image, categoryId } = req.body;
+        const pool = getPool();
 
-router.patch('/update', Products.update)
+        await pool.request()
+            .input("name", name)
+            .input("price", price)
+            .input("quantity", quantity)
+            .input("description", description)
+            .input("image", image)
+            .input("categoryId", categoryId)
+            .query(`
+                INSERT INTO Products (Name, Price, Quantity, Description, Image, CategoryID)
+                VALUES (@name, @price, @quantity, @description, @image, @categoryId)
+            `);
 
-router.delete('/delete', Products.delete)
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
+/**
+ * Cập nhật sản phẩm
+ */
+router.patch("/update", async (req, res) => {
+    try {
+        const { id, name, price, quantity, description, image, categoryId } = req.body;
+        const pool = getPool();
 
-module.exports = router
+        await pool.request()
+            .input("id", id)
+            .input("name", name)
+            .input("price", price)
+            .input("quantity", quantity)
+            .input("description", description)
+            .input("image", image)
+            .input("categoryId", categoryId)
+            .query(`
+                UPDATE Products
+                SET Name = @name,
+                    Price = @price,
+                    Quantity = @quantity,
+                    Description = @description,
+                    Image = @image,
+                    CategoryID = @categoryId
+                WHERE ProductID = @id
+            `);
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * Xóa sản phẩm
+ */
+router.delete("/delete", async (req, res) => {
+    try {
+        const { id } = req.body;
+        const pool = getPool();
+
+        await pool.request()
+            .input("id", id)
+            .query("DELETE FROM Products WHERE ProductID = @id");
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+export default router;

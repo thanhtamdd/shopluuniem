@@ -1,19 +1,47 @@
-const Note = require('../../Models/note')
+import { getPool } from "../../config/db.js";
 
-module.exports.post_delivery = async (req, res) => {
+/* =========================
+   POST: TẠO NOTE
+========================= */
+export const post_note = async (req, res) => {
+    try {
+        const { content, id_order } = req.body;
 
-    const note = await Note.create(req.body)
+        const pool = await getPool();
 
-    res.json(note)
+        const result = await pool.request()
+            .input("content", content)
+            .input("id_order", id_order)
+            .query(`
+                INSERT INTO Notes (content, id_order)
+                OUTPUT INSERTED.*
+                VALUES (@content, @id_order)
+            `);
 
-}
+        res.json(result.recordset[0]);
 
-module.exports.get_delivery = async (req, res) => {
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-    const id = req.params.id
+/* =========================
+   GET: LẤY NOTE THEO ID
+========================= */
+export const get_note = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const pool = await getPool();
 
-    const note = await Note.findOne({ _id: id })
+        const result = await pool.request()
+            .input("id", id)
+            .query(`
+                SELECT * FROM Notes WHERE id = @id
+            `);
 
-    res.json(note)
+        res.json(result.recordset[0] || null);
 
-}
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

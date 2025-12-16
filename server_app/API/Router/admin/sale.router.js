@@ -1,19 +1,141 @@
-var express = require('express')
+import express from "express";
+import { getPool } from "../../../config/db.js";
 
-var router = express.Router()
+const router = express.Router();
 
-const Sale = require('../../Controller/admin/sale.controller')
+/**
+ * Danh sách sale
+ */
+router.get("/", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .query("SELECT * FROM Sales ORDER BY CreatedAt DESC");
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-router.get('/', Sale.index)
+/**
+ * Tạo sale
+ */
+router.post("/", async (req, res) => {
+    try {
+        const { name, discountPercent, startDate, endDate, productIds } = req.body;
+        const pool = getPool();
 
-router.post('/', Sale.create)
+        const sale = await pool.request()
+            .input("name", name)
+            .input("discount", discountPercent)
+            .input("start", startDate)
+            .input("end", endDate)
+            .query(`
+                INSERT INTO Sales (Name, DiscountPercent, StartDate, EndDate)
+                OUTPUT INSERTED.SaleID
+                VALUES (@name, @discount, @start, @end)
+            `);
 
-router.get('/:id', Sale.detail)
+        const saleId = sale.recordset[0].SaleID;
 
-router.patch('/:id', Sale.update)
+        if (Array.isArray(productIds)) {
+            for (const productId of productIds) {
+                await pool.request()
+                    .input("saleId", saleId)
+                    .input("productId", productId)
+                    .query(`
+                        INSERT INTO SaleProducts (SaleID, ProductID)
+                        VALUES (@saleId, @productId)
+                    `);
+            }
+        }
 
-router.get('/list/product', Sale.list)
+        res.json({ success: true, saleId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-router.get('/list/:id', Sale.detailList)
+/**
+ * Chi tiết sale
+ */
+router.get("/:id", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .input("id", req.params.id)
+            .query("SELECT * FROM Sales WHERE SaleID = @id");
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
-module.exports = router
+/**
+ * Cập nhật sale
+ */
+router.patch("/:id", async (req, res) => {
+    try {
+        const { name, discountPercent, startDate, endDate } = req.body;
+        const pool = getPool();
+
+        await pool.request()
+            .input("id", req.params.id)
+            .input("name", name)
+            .input("discount", discountPercent)
+            .input("start", startDate)
+            .input("end", endDate)
+            .query(`
+                UPDATE Sales
+                SET Name = @name,
+                    DiscountPercent = @discount,
+                    StartDate = @start,
+                    EndDate = @end
+                WHERE SaleID = @id
+            `);
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * Danh sách sản phẩm đang sale
+ */
+router.get("/list/product", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request().query(`
+            SELECT p.*, s.DiscountPercent
+            FROM SaleProducts sp
+            JOIN Products p ON sp.ProductID = p.ProductID
+            JOIN Sales s ON sp.SaleID = s.SaleID
+        `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * Chi tiết sale + sản phẩm
+ */
+router.get("/list/:id", async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.request()
+            .input("id", req.params.id)
+            .query(`
+                SELECT p.*
+                FROM SaleProducts sp
+                JOIN Products p ON sp.ProductID = p.ProductID
+                WHERE sp.SaleID = @id
+            `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+export default router;

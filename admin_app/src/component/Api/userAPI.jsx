@@ -1,36 +1,27 @@
-import axiosClient from "./axiosClient"
+import axiosClient from './axiosClient';
 
 const userAPI = {
+  login: async (data) => {
+    try {
+      const res = await axiosClient.post('/admin/user/login', data);
 
-    getAPI: (query) => {
-        const url = `/admin/user${query}`
-        return axiosClient.get(url)
-    },
-    details: (id) => {
-        const url = `/admin/user/${id}`
-        return axiosClient.get(url)
-    },
-    login: (data) => {
-        const url = `/admin/user/login`
-        return axiosClient.post(url, data)
-    },
-    loginNV: (data) => {
-        const url = `/admin/user/loginnv`
-        return axiosClient.post(url, data)
-    },
-    create: (query) => {
-        const url = `/admin/user/create${query}`
-        return axiosClient.post(url)
-    },
-    update: (query) => {
-        const url = `/admin/user/update${query}`
-        return axiosClient.patch(url)
-    },
-    delete: (query) => {
-        const url = `/admin/user/delete${query}`
-        return axiosClient.delete(url)
+      console.log('[userAPI.login] raw response:', res);
+
+      return {
+        success: res.success,
+        user: res.user || null,
+        token: res.token || null,  // <-- sửa từ res.jwt thành res.token
+        msg: res.msg || null,
+      };
+    } catch (err) {
+      console.error('[userAPI.login] error', err);
+      return {
+        success: false,
+        msg: 'Server không phản hồi',
+      };
     }
+  },
+};
 
-}
 
-export default userAPI
+export default userAPI;

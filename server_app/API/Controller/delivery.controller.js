@@ -1,20 +1,55 @@
+import { getPool } from "../../config/db.js";
 
-const Delivery = require('../../Models/delivery')
+/* =========================
+   CREATE DELIVERY
+========================= */
+export const post_delivery = async (req, res) => {
+    try {
+        const {
+            id_delivery,
+            id_order,
+            address,
+            status
+        } = req.body;
 
-module.exports.post_delivery = async (req, res) => {
+        const pool = await getPool();
 
-    const delivery = await Delivery.create(req.body)
+        await pool.request()
+            .input("id_delivery", id_delivery)
+            .input("id_order", id_order)
+            .input("address", address)
+            .input("status", status)
+            .query(`
+                INSERT INTO Deliveries (id_delivery, id_order, address, status)
+                VALUES (@id_delivery, @id_order, @address, @status)
+            `);
 
-    res.json(delivery)
+        res.json({ msg: "Tạo delivery thành công" });
 
-}
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-module.exports.get_delivery = async (req, res) => {
+/* =========================
+   GET DELIVERY BY ID
+========================= */
+export const get_delivery = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const pool = await getPool();
 
-    const id = req.params.id
+        const result = await pool.request()
+            .input("id_delivery", id)
+            .query(`
+                SELECT *
+                FROM Deliveries
+                WHERE id_delivery = @id_delivery
+            `);
 
-    const delivery = await Delivery.findOne({ id_delivery: id })
+        res.json(result.recordset[0] || null);
 
-    res.json(delivery)
-
-}
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

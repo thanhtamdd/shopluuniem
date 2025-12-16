@@ -1,10 +1,20 @@
-const Category = require('../../Models/category')
+import { getPool } from "../../config/db.js";
 
-module.exports.index = async (req, res) => {
+/* =========================
+   GET ALL CATEGORY
+========================= */
+export const index = async (req, res) => {
+    try {
+        const pool = await getPool();
 
-    const category = await Category.find()
-    // console.log(category)
+        const result = await pool.request().query(`
+            SELECT * FROM Category
+            ORDER BY id DESC
+        `);
 
-    res.json(category)
+        res.json(result.recordset);
 
-}
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

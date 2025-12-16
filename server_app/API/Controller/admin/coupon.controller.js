@@ -1,116 +1,192 @@
-const Coupon = require('../../../Models/coupon');
-const Order = require('../../../Models/order');
+import { getPool, sql } from "../../../config/db.js";
 
-module.exports.index = async (req, res) => {
+/**
+ * GET /api/admin/Coupon
+ * List + search + pagination
+ */
+export const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const search = req.query.search || "";
+        const offset = (page - 1) * limit;
 
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
+        const pool = await getPool();
 
-    const perPage = parseInt(req.query.limit) || 8;
-    const totalPage = Math.ceil(await Coupon.countDocuments() / perPage);
+        const countResult = await pool.request()
+            .input("search", sql.NVarChar, `%${search}%`)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM Coupons
+                WHERE Code LIKE @search
+                   OR CAST(Promotion AS NVARCHAR) LIKE @search
+            `);
 
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
+        const totalPage = Math.ceil(countResult.recordset[0].total / limit);
 
-    const coupon = await Coupon.find();
+        const result = await pool.request()
+            .input("search", sql.NVarChar, `%${search}%`)
+            .input("limit", sql.Int, limit)
+            .input("offset", sql.Int, offset)
+            .query(`
+                SELECT *
+                FROM Coupons
+                WHERE Code LIKE @search
+                   OR CAST(Promotion AS NVARCHAR) LIKE @search
+                ORDER BY CouponID DESC
+                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+            `);
 
-    if (!keyWordSearch) {
         res.json({
-            coupons: coupon.slice(start, end),
-            totalPage: totalPage
-        })
-
-    } else {
-        var newData = coupon.filter(value => {
-            return value.code.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.promotion.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
-
-        res.json({
-            coupons: newData.slice(start, end),
-            totalPage: totalPage
-        })
+            coupons: result.recordset,
+            totalPage
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-}
+/**
+ * POST /api/admin/Coupon
+ */
+export const create = async (req, res) => {
+    try {
+        const { code, count, promotion, describe } = req.body;
+        const pool = await getPool();
 
-module.exports.create = async (req, res) => {
+        await pool.request()
+            .input("code", sql.NVarChar, code)
+            .input("count", sql.Int, count)
+            .input("promotion", sql.Int, promotion)
+            .input("describe", sql.NVarChar, describe)
+            .query(`
+                INSERT INTO Coupons(Code, Count, Promotion, Description)
+                VALUES (@code, @count, @promotion, @describe)
+            `);
 
-    await Coupon.create(req.body)
-
-    res.json({ msg: "Bạn đã thêm thành công"})
-
-}
-
-module.exports.update = async (req, res) => {
-
-    const id = req.params.id
-
-    const coupon = await Coupon.findOne({ _id: id })
-
-    coupon.code = req.body.code
-    coupon.count = req.body.count
-    coupon.promotion = req.body.promotion
-    coupon.describe = req.body.describe
-
-    coupon.save()
-
-    res.json({ msg: "Bạn đã cập nhật thành công"})
-
-}
-
-module.exports.delete = async (req, res) => {
-
-    const id = req.params.id
-
-    await Coupon.deleteOne({ _id: id })
-
-    res.json("Thanh Cong")
-
-}
-
-module.exports.detail = async (req, res) => {
-
-    const id = req.params.id
-
-    const coupon = await Coupon.findOne({ _id: id })
-
-    res.json(coupon)
-
-}
-
-module.exports.checking = async (req, res) => {
-
-    const code = req.query.code
-
-    const id_user = req.query.id_user
-
-    const coupon = await Coupon.findOne({ code })
-
-    if (!coupon){
-        res.json({ msg: "Không tìm thấy" })
+        res.json({ msg: "Bạn đã thêm thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-    const checkCoupon = await Order.findOne({ id_user: id_user, id_coupon: coupon._id })
+/**
+ * PATCH /api/admin/Coupon/:id
+ */
+export const update = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { code, count, promotion, describe } = req.body;
 
-    if (checkCoupon){
-        res.json({ msg: "Bạn đã sử dụng mã này rồi"})
+        const pool = await getPool();
+
+        await pool.request()
+            .input("id", sql.Int, id)
+            .input("code", sql.NVarChar, code)
+            .input("count", sql.Int, count)
+            .input("promotion", sql.Int, promotion)
+            .input("describe", sql.NVarChar, describe)
+            .query(`
+                UPDATE Coupons
+                SET Code = @code,
+                    Count = @count,
+                    Promotion = @promotion,
+                    Description = @describe
+                WHERE CouponID = @id
+            `);
+
+        res.json({ msg: "Bạn đã cập nhật thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-    res.json({ msg: "Thành công", coupon: coupon })
+/**
+ * DELETE /api/admin/Coupon/:id
+ */
+export const deleteCoupon = async (req, res) => {
+    try {
+        const pool = await getPool();
 
-}
+        await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .query(`DELETE FROM Coupons WHERE CouponID = @id`);
 
-module.exports.createCoupon = async (req, res) => {
+        res.json("Thành công");
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-    const id = req.params.id
+/**
+ * GET /api/admin/Coupon/:id
+ */
+export const detail = async (req, res) => {
+    try {
+        const pool = await getPool();
 
-    const coupon = await Coupon.findOne({ _id: id })
+        const result = await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .query(`SELECT * FROM Coupons WHERE CouponID = @id`);
 
-    coupon.count = parseInt(coupon.count) - 1
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-    coupon.save()
+/**
+ * GET /api/admin/Coupon/promotion/checking?code=&id_user=
+ */
+export const checking = async (req, res) => {
+    try {
+        const { code, id_user } = req.query;
+        const pool = await getPool();
 
-    res.json("Thanh Cong")
+        const couponResult = await pool.request()
+            .input("code", sql.NVarChar, code)
+            .query(`SELECT * FROM Coupons WHERE Code = @code`);
 
-}
+        if (couponResult.recordset.length === 0)
+            return res.json({ msg: "Không tìm thấy" });
+
+        const coupon = couponResult.recordset[0];
+
+        const used = await pool.request()
+            .input("userId", sql.Int, id_user)
+            .input("couponId", sql.Int, coupon.CouponID)
+            .query(`
+                SELECT * FROM Orders
+                WHERE UserID = @userId
+                  AND CouponID = @couponId
+            `);
+
+        if (used.recordset.length > 0)
+            return res.json({ msg: "Bạn đã sử dụng mã này rồi" });
+
+        res.json({ msg: "Thành công", coupon });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * PATCH /api/admin/Coupon/promotion/:id
+ */
+export const createCoupon = async (req, res) => {
+    try {
+        const pool = await getPool();
+
+        await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .query(`
+                UPDATE Coupons
+                SET Count = Count - 1
+                WHERE CouponID = @id AND Count > 0
+            `);
+
+        res.json("Thành công");
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

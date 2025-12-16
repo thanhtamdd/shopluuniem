@@ -1,121 +1,171 @@
+import { getPool } from '../../config/db.js';
 
-const Products = require('../../Models/product')
-const Category = require('../../Models/category')
+/* ======================
+   GET: TẤT CẢ SẢN PHẨM
+====================== */
+export const index = async (req, res) => {
+    try {
+        const pool = await getPool();
 
+        const result = await pool.request()
+            .query(`SELECT * FROM Products`);
 
-module.exports.index = async (req, res) => {
+        res.json(result.recordset);
 
-    const products = await Products.find()
-
-    res.json(products)
-}
-
-
-module.exports.gender = async (req, res) => {
-
-    const gender = req.query.gender
-
-    const category = await Category.find({ gender: gender })
-
-    res.json(category)
-
-}
-
-//TH: Hàm này dùng để phân loại sản phẩm
-module.exports.category = async (req, res) => {
-
-    const id_category = req.query.id_category
-
-    let products_category
-
-    if (id_category === 'all'){
-        products_category = await Products.find()
-    }else{
-        products_category = await Products.find({ id_category: id_category })
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    
-    res.json(products_category)
-}
+};
 
-//TH: Chi Tiết Sản Phẩm
-module.exports.detail = async (req, res) => {
+/* ======================
+   GET: CATEGORY THEO GENDER
+====================== */
+export const gender = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const gender = req.query.gender;
 
-    const id = req.params.id
+        const result = await pool.request()
+            .input("gender", gender)
+            .query(`SELECT * FROM Categories WHERE gender = @gender`);
 
-    const product = await Products.findOne({ _id: id })
+        res.json(result.recordset);
 
-    res.json(product)
-
-}
-
-
-// QT: Tìm kiếm phân loại và phân trang sản phẩm
-module.exports.pagination = async (req, res) => {
-
-    //Lấy page từ query
-    const page = parseInt(req.query.page) || 1
-
-    //Lấy số lượng từ query
-    const numberProduct = parseInt(req.query.count) || 1
-
-    //Lấy key search từ query
-    const keyWordSearch = req.query.search
-
-    //Lấy category từ query
-    const category = req.query.category
-
-    //Lấy sản phẩm đầu và sẩn phẩm cuối
-    var start = (page - 1) * numberProduct
-    var end = page * numberProduct
-
-    var products
-
-    //Phân loại điều kiện category từ client gửi lên
-    if (category === 'all'){
-        products = await Products.find()
-    }else{
-        products = await Products.find({ id_category: category })
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-    var paginationProducts = products.slice(start, end)
+/* ======================
+   GET: SẢN PHẨM THEO CATEGORY
+====================== */
+export const category = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const id_category = req.query.id_category;
 
+        let query = `SELECT * FROM Products`;
+        if (id_category !== 'all') {
+            query += ` WHERE id_category = @id_category`;
+        }
 
-    if (!keyWordSearch){
-        
-        res.json(paginationProducts)
+        const request = pool.request();
+        if (id_category !== 'all') {
+            request.input("id_category", id_category);
+        }
 
-    }else{
-        var newData = paginationProducts.filter(value => {
-            return value.name_product.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-            value.price_product.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
+        const result = await request.query(query);
 
-        res.json(newData)
+        res.json(result.recordset);
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
+};
 
-}
+/* ======================
+   GET: CHI TIẾT SẢN PHẨM
+====================== */
+export const detail = async (req, res) => {
+    try {
+        const pool = await getPool();
+        const id = req.params.id;
 
-// Hàm này dùng để hiện những sản phẩm search theo scoll ở component tìm kiếm bên client
-module.exports.scoll = async (req, res) => {
+        const result = await pool.request()
+            .input("id", id)
+            .query(`SELECT * FROM Products WHERE id = @id`);
 
-    const page = req.query.page
-    
-    const count = req.query.count
+        res.json(result.recordset[0] || null);
 
-    const search = req.query.search
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-    //Lấy sản phẩm đầu và sẩn phẩm cuối
-    const start = (page - 1) * count
-    const end = page * count   
+/* ======================
+   PAGINATION + SEARCH + CATEGORY
+====================== */
+export const pagination = async (req, res) => {
+    try {
+        const pool = await getPool();
 
-    const products = await Products.find()
+        const page = parseInt(req.query.page) || 1;
+        const count = parseInt(req.query.count) || 1;
+        const search = req.query.search;
+        const category = req.query.category;
 
-    const newData = products.filter(value => {
-        return value.name_product.toUpperCase().indexOf(search.toUpperCase()) !== -1
-    })
+        const offset = (page - 1) * count;
 
-    const paginationProducts = newData.slice(start, end)
+        let sql = `
+            SELECT *
+            FROM Products
+            WHERE 1 = 1
+        `;
 
-    res.json(paginationProducts)
+        if (category !== 'all') {
+            sql += ` AND id_category = @category`;
+        }
 
-}
+        if (search) {
+            sql += `
+                AND (
+                    UPPER(name_product) LIKE '%' + UPPER(@search) + '%'
+                    OR CAST(price_product AS NVARCHAR) LIKE '%' + @search + '%'
+                )
+            `;
+        }
+
+        sql += `
+            ORDER BY id
+            OFFSET @offset ROWS
+            FETCH NEXT @count ROWS ONLY
+        `;
+
+        const request = pool.request()
+            .input("offset", offset)
+            .input("count", count);
+
+        if (category !== 'all') request.input("category", category);
+        if (search) request.input("search", search);
+
+        const result = await request.query(sql);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/* ======================
+   SCROLL SEARCH
+====================== */
+export const scoll = async (req, res) => {
+    try {
+        const pool = await getPool();
+
+        const page = parseInt(req.query.page) || 1;
+        const count = parseInt(req.query.count) || 1;
+        const search = req.query.search;
+
+        const offset = (page - 1) * count;
+
+        const result = await pool.request()
+            .input("search", search)
+            .input("offset", offset)
+            .input("count", count)
+            .query(`
+                SELECT *
+                FROM Products
+                WHERE UPPER(name_product) LIKE '%' + UPPER(@search) + '%'
+                ORDER BY id
+                OFFSET @offset ROWS
+                FETCH NEXT @count ROWS ONLY
+            `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

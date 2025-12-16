@@ -1,129 +1,204 @@
-const Category = require('../../../Models/category')
-const Product = require('../../../Models/product')
+import { getPool, sql } from "../../../config/db.js";
 
-module.exports.index = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
+/**
+ * GET /api/admin/Category
+ * List + search + pagination
+ */
+export const index = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const search = req.query.search || "";
+        const offset = (page - 1) * limit;
 
-    const perPage = parseInt(req.query.limit) || 8;
-    const totalPage = Math.ceil(await Category.countDocuments() / perPage);
+        const pool = await getPool();
 
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
+        const countResult = await pool.request()
+            .input("search", sql.NVarChar, `%${search}%`)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM Categories
+                WHERE Category LIKE @search
+            `);
 
-    const categories = await Category.find();
+        const totalPage = Math.ceil(countResult.recordset[0].total / limit);
 
-
-    if (!keyWordSearch) {
-        res.json({
-            categories: categories.slice(start, end),
-            totalPage: totalPage
-        })
-
-    } else {
-        var newData = categories.filter(value => {
-            return value.category.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.id.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
-
-        res.json({
-            categories: newData.slice(start, end),
-            totalPage: totalPage
-        })
-    }
-}
-
-module.exports.create = async (req, res) => {
-    const category = await Category.find();
-
-    const categoryFilter = category.filter((c) => {
-        return c.category.toUpperCase() === req.query.name.toUpperCase().trim()
-    });
-
-    if (categoryFilter.length > 0) {
-        res.json({ msg: 'Loại đã tồn tại' })
-    } else {
-        var newcategory = new Category()
-        req.query.name = req.query.name.toLowerCase().replace(/^.|\s\S/g, a => { return a.toUpperCase() })
-        newcategory.category = req.query.name
-
-        newcategory.save();
-        res.json({ msg: "Bạn đã thêm thành công" })
-    }
-}
-
-module.exports.delete = async (req, res) => {
-    console.log(req.query)
-    const id = req.query.id;
-
-    await Category.deleteOne({ _id: id }, (err) => {
-        if (err) {
-            res.json({ msg: err })
-            return;
-        }
-        res.json({ msg: "Thanh Cong" })
-    })
-
-}
-
-
-module.exports.detailProduct = async (req, res) => {
-    let page = parseInt(req.query.page) || 1;
-    const keyWordSearch = req.query.search;
-
-    const perPage = parseInt(req.query.limit) || 8;
-
-
-    let start = (page - 1) * perPage;
-    let end = page * perPage;
-
-    const category = await Category.findOne({ category: req.params.id });
-
-
-    let products = await Product.find({ id_category: category._id }).populate('id_category');
-    const totalPage = Math.ceil(products.length / perPage);
-
-    if (!keyWordSearch) {
-        res.json({
-            products: products.slice(start, end),
-            totalPage: totalPage
-        })
-
-    } else {
-        var newData = products.filter(value => {
-            return value.name_product.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.price_product.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1 ||
-                value.id.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-            // value.id_category.category.toUpperCase().indexOf(keyWordSearch.toUpperCase()) !== -1
-        })
+        const result = await pool.request()
+            .input("search", sql.NVarChar, `%${search}%`)
+            .input("limit", sql.Int, limit)
+            .input("offset", sql.Int, offset)
+            .query(`
+                SELECT CategoryID, Category
+                FROM Categories
+                WHERE Category LIKE @search
+                ORDER BY Category
+                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+            `);
 
         res.json({
-            products: newData.slice(start, end),
-            totalPage: totalPage
-        })
-    }
-}
-
-module.exports.update = async (req, res) => {
-    const category = await Category.find();
-
-    const categoryFilter = category.filter((c) => {
-        return c.category.toUpperCase() === req.query.name.toUpperCase().trim() && c.id !== req.query.id
-    });
-
-    if (categoryFilter.length > 0) {
-        res.json({ msg: 'Loại đã tồn tại' })
-    } else {
-        req.query.name = req.query.name.toLowerCase().replace(/^.|\s\S/g, a => { return a.toUpperCase() })
-        await Category.updateOne({ _id: req.query.id }, { category: req.query.name }, function (err, res) {
-            if (err) return res.json({ msg: err });
+            categories: result.recordset,
+            totalPage
         });
-        res.json({ msg: "Bạn đã update thành công" })
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-}
+};
 
-module.exports.detail = async (req, res) => {
-    const category = await Category.findOne({ _id: req.params.id });
+/**
+ * POST /api/admin/Category/create?name=
+ */
+export const create = async (req, res) => {
+    try {
+        let name = req.query.name?.trim();
+        if (!name) return res.json({ msg: "Tên category không hợp lệ" });
 
-    res.json(category)
-}
+        name = name.toLowerCase().replace(/^.|\s\S/g, a => a.toUpperCase());
+
+        const pool = await getPool();
+
+        const exist = await pool.request()
+            .input("name", sql.NVarChar, name)
+            .query(`SELECT * FROM Categories WHERE Category = @name`);
+
+        if (exist.recordset.length > 0) {
+            return res.json({ msg: "Loại đã tồn tại" });
+        }
+
+        await pool.request()
+            .input("name", sql.NVarChar, name)
+            .query(`INSERT INTO Categories(Category) VALUES (@name)`);
+
+        res.json({ msg: "Bạn đã thêm thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * DELETE /api/admin/Category/delete?id=
+ */
+export const deleteCategory = async (req, res) => {
+    try {
+        const id = req.query.id;
+        const pool = await getPool();
+
+        await pool.request()
+            .input("id", sql.Int, id)
+            .query(`DELETE FROM Categories WHERE CategoryID = @id`);
+
+        res.json({ msg: "Thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * GET /api/admin/Category/detail/:id
+ */
+export const detail = async (req, res) => {
+    try {
+        const pool = await getPool();
+
+        const result = await pool.request()
+            .input("id", sql.Int, req.params.id)
+            .query(`
+                SELECT CategoryID, Category
+                FROM Categories
+                WHERE CategoryID = @id
+            `);
+
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * PUT /api/admin/Category/update?id=&name=
+ */
+export const update = async (req, res) => {
+    try {
+        let name = req.query.name?.trim();
+        const id = req.query.id;
+
+        name = name.toLowerCase().replace(/^.|\s\S/g, a => a.toUpperCase());
+
+        const pool = await getPool();
+
+        const exist = await pool.request()
+            .input("name", sql.NVarChar, name)
+            .input("id", sql.Int, id)
+            .query(`
+                SELECT * FROM Categories 
+                WHERE Category = @name AND CategoryID <> @id
+            `);
+
+        if (exist.recordset.length > 0) {
+            return res.json({ msg: "Loại đã tồn tại" });
+        }
+
+        await pool.request()
+            .input("id", sql.Int, id)
+            .input("name", sql.NVarChar, name)
+            .query(`
+                UPDATE Categories SET Category = @name
+                WHERE CategoryID = @id
+            `);
+
+        res.json({ msg: "Bạn đã update thành công" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+/**
+ * GET /api/admin/Category/detail/:name
+ * Lấy sản phẩm theo category
+ */
+export const detailProduct = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 8;
+        const search = req.query.search || "";
+        const offset = (page - 1) * limit;
+
+        const pool = await getPool();
+
+        const category = await pool.request()
+            .input("name", sql.NVarChar, req.params.id)
+            .query(`SELECT CategoryID FROM Categories WHERE Category = @name`);
+
+        if (category.recordset.length === 0)
+            return res.json({ products: [], totalPage: 0 });
+
+        const categoryId = category.recordset[0].CategoryID;
+
+        const count = await pool.request()
+            .input("id", sql.Int, categoryId)
+            .query(`
+                SELECT COUNT(*) AS total
+                FROM Products
+                WHERE CategoryID = @id
+            `);
+
+        const totalPage = Math.ceil(count.recordset[0].total / limit);
+
+        const products = await pool.request()
+            .input("id", sql.Int, categoryId)
+            .input("search", sql.NVarChar, `%${search}%`)
+            .input("limit", sql.Int, limit)
+            .input("offset", sql.Int, offset)
+            .query(`
+                SELECT *
+                FROM Products
+                WHERE CategoryID = @id
+                  AND NameProduct LIKE @search
+                ORDER BY ProductID DESC
+                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+            `);
+
+        res.json({ products: products.recordset, totalPage });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
