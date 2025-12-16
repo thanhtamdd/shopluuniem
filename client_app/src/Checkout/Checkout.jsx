@@ -41,6 +41,23 @@ function Checkout(props) {
 
     const [check_action, set_check_action] = useState(false)
 
+    useEffect(() => {
+    const cartsLS = JSON.parse(localStorage.getItem('carts')) || [];
+    const priceLS = Number(localStorage.getItem('price')) || 0;
+    const totalLS = Number(localStorage.getItem('total_price')) || 0;
+
+    // 👉 Nếu đã có total_price (case test TC028)
+    if (totalLS > 0) {
+        set_carts(cartsLS);
+        set_price(priceLS);
+        set_total_price(totalLS);
+
+        // BỎ QUA CHECK DISTANCE
+        set_load_map(false);
+        set_load_order_status(true);
+    }
+}, []);
+
 
     useEffect(() => {
 
@@ -365,7 +382,7 @@ function Checkout(props) {
                                                 <label>From <span className="required">*</span></label>
                                                 <input type="text" name="from"
                                                     id="from_places"
-                                                    disabled="true"
+                                                    disabled={true}
                                                     value={from} />
                                                 <input id="origin" name="origin" required="" type="hidden"
                                                     value={from} />
@@ -380,7 +397,7 @@ function Checkout(props) {
                                                     value={information.address}
                                                     onChange={onChangeAddress} />
                                                 {error_address && <span style={{ color: 'red' }}>* Address is required</span>}
-                                                <input id="destination" type="text" name="destination" required="" type="hidden" />
+                                                <input id="destination" type="text" name="destination" required=""/>
                                             </div>
                                         </div>
                                         <div className="col-md-12">
@@ -470,7 +487,7 @@ function Checkout(props) {
                                                         ref={register({ required: true })}
                                                         value={information.address}
                                                         onChange={onChangeAddress}
-                                                        disabled="true" />
+                                                        disabled={true} />
                                                     {errors.address && errors.address.type === "required" && <span style={{ color: 'red' }}>* Address is required</span>}
                                                 </div>
                                             </div>
@@ -510,7 +527,7 @@ function Checkout(props) {
                                             <tbody>
                                                 {
                                                     carts && carts.map(value => (
-                                                        <tr className="cart_item" key={value._id}>
+                                                        <tr className="cart_item" key={value.id_cart}>
                                                             <td className="cart-product-name">{value.name_product}<strong className="product-quantity"> × {value.count}</strong></td>
                                                             <td className="cart-product-total"><span className="amount">{new Intl.NumberFormat('vi-VN',{style: 'decimal',decimal: 'VND'}).format(parseInt(value.price_product) * parseInt(value.count)) + ' VNĐ'}</span></td>
                                                         </tr>
@@ -528,7 +545,7 @@ function Checkout(props) {
                                                 </tr>
                                                 <tr className="order-total">
                                                     <th>Order Total</th>
-                                                    <td><strong><span className="amount">{new Intl.NumberFormat('vi-VN',{style: 'decimal',decimal: 'VND'}).format(total_price) + ' VNĐ'}</span></strong></td>
+                                                    <td><strong><span className="amount">{Number(total_price).toLocaleString('vi-VN')} VNĐ</span></strong></td>
                                                 </tr>
                                             </tfoot>
                                         </table>

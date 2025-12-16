@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "axios": "^1.13.2",
+    "axios": "^0.27.2",
     "dotenv": "^17.2.3",
     "jspdf": "^3.0.4",
     "mssql": "^12.2.0",
@@ -12,6 +12,7 @@
   "name": "cnpm-shopping-master",
   "private": true,
   "scripts": {
+    "test": "react-scripts test",
     "server": "cd server_app && npm run start",
     "client": "cd client_app && npm start",
     "admin": "cd admin_app && npm start",

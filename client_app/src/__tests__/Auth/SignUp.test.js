@@ -6,7 +6,26 @@ import User from '../../API/User';
 jest.mock('../../API/User');
 
 describe('SignUp Component', () => {
-  test('TC005: Validation email trống', async () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('TC005: Hiển thị form đăng ký đúng', () => {
+    render(
+      <BrowserRouter>
+        <SignUp />
+      </BrowserRouter>
+    );
+    
+    expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/first name/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/username/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/^password/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/confirm password/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
+  });
+
+  test('TC006: Validation email trống', async () => {
     render(
       <BrowserRouter>
         <SignUp />
@@ -17,11 +36,11 @@ describe('SignUp Component', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/email không được để trống/i)).toBeInTheDocument();
+      expect(screen.getByText(/email is required/i)).toBeInTheDocument();
     });
   });
 
-  test('TC006: Validation password không khớp', async () => {
+  test('TC007: Validation password không khớp', async () => {
     render(
       <BrowserRouter>
         <SignUp />
@@ -37,7 +56,7 @@ describe('SignUp Component', () => {
     fireEvent.change(screen.getByPlaceholderText(/username/i), {
       target: { value: 'testuser' }
     });
-    fireEvent.change(screen.getByPlaceholderText(/^password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/^password$/i), {
       target: { value: 'password123' }
     });
     fireEvent.change(screen.getByPlaceholderText(/confirm password/i), {
@@ -52,8 +71,8 @@ describe('SignUp Component', () => {
     });
   });
 
-  test('TC007: Đăng ký thành công', async () => {
-    User.Post_User.mockResolvedValue({ message: 'Success' });
+  test('TC008: Hiển thị lỗi khi username đã tồn tại', async () => {
+    User.Post_User.mockResolvedValue('User Da Ton Tai');
     
     render(
       <BrowserRouter>
@@ -68,9 +87,9 @@ describe('SignUp Component', () => {
       target: { value: 'Test User' }
     });
     fireEvent.change(screen.getByPlaceholderText(/username/i), {
-      target: { value: 'testuser' }
+      target: { value: 'existinguser' }
     });
-    fireEvent.change(screen.getByPlaceholderText(/^password/i), {
+    fireEvent.change(screen.getByPlaceholderText(/^password$/i), {
       target: { value: 'password123' }
     });
     fireEvent.change(screen.getByPlaceholderText(/confirm password/i), {
@@ -81,6 +100,40 @@ describe('SignUp Component', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
+      expect(screen.getByText(/username is existed/i)).toBeInTheDocument();
+    });
+  });
+
+  test('TC009: Đăng ký thành công', async () => {
+    User.Post_User.mockResolvedValue({ _id: '123', username: 'testuser' });
+    
+    render(
+      <BrowserRouter>
+        <SignUp />
+      </BrowserRouter>
+    );
+    
+    fireEvent.change(screen.getByPlaceholderText(/email/i), {
+      target: { value: 'test@test.com' }
+    });
+    fireEvent.change(screen.getByPlaceholderText(/first name/i), {
+      target: { value: 'Test User' }
+    });
+    fireEvent.change(screen.getByPlaceholderText(/username/i), {
+      target: { value: 'newuser' }
+    });
+    fireEvent.change(screen.getByPlaceholderText(/^password$/i), {
+      target: { value: 'password123' }
+    });
+    fireEvent.change(screen.getByPlaceholderText(/confirm password/i), {
+      target: { value: 'password123' }
+    });
+    
+    const submitButton = screen.getByRole('button', { name: /register/i });
+    fireEvent.click(submitButton);
+    
+    await waitFor(() => {
+      expect(User.Post_User).toHaveBeenCalled();
       expect(screen.getByText(/bạn đã đăng ký thành công/i)).toBeInTheDocument();
     });
   });

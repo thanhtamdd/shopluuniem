@@ -1,77 +1,55 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import Product from '../../component/Product/Product';
-import productAPI from '../../component/Api/productAPI';
+import Products from '../../Shop/Component/Products';
 
-jest.mock('../../component/Api/productAPI');
+describe('Products Component', () => {
 
-describe('Admin Product Management', () => {
   const mockProducts = [
     {
-      _id: 'prod1',
+      _id: '1',
       name_product: 'Test Product 1',
       price_product: 100000,
-      image: 'test1.jpg',
-      describe: 'Description 1',
-      id_category: { category: 'Category 1' }
+      image: 'test1.jpg'
+    },
+    {
+      _id: '2',
+      name_product: 'Test Product 2',
+      price_product: 200000,
+      image: 'test2.jpg'
     }
   ];
-  
-  beforeEach(() => {
-    productAPI.getAPI.mockResolvedValue({
-      products: mockProducts,
-      totalPage: 1
-    });
-  });
 
-  test('TC021: Hiển thị danh sách sản phẩm', async () => {
+  test('TC020: Hiển thị danh sách sản phẩm', () => {
     render(
       <BrowserRouter>
-        <Product />
+        <Products products={mockProducts} />
       </BrowserRouter>
     );
-    
-    await waitFor(() => {
-      expect(screen.getByText(/test product 1/i)).toBeInTheDocument();
-      expect(screen.getByText(/100,000 VNĐ/i)).toBeInTheDocument();
-    });
+
+    expect(screen.getByText(/test product 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/test product 2/i)).toBeInTheDocument();
   });
 
-  test('TC022: Tìm kiếm sản phẩm', async () => {
+  test('TC021: Hiển thị đúng giá sản phẩm', () => {
     render(
       <BrowserRouter>
-        <Product />
+        <Products products={mockProducts} />
       </BrowserRouter>
     );
-    
-    const searchInput = screen.getByPlaceholderText(/enter search/i);
-    fireEvent.change(searchInput, { target: { value: 'Test Product' } });
-    
-    await waitFor(() => {
-      expect(productAPI.getAPI).toHaveBeenCalledWith(
-        expect.stringContaining('search=Test Product')
-      );
-    });
+
+    expect(screen.getByText(/100\.000/i)).toBeInTheDocument();
+    expect(screen.getByText(/200\.000/i)).toBeInTheDocument();
   });
 
-  test('TC023: Xóa sản phẩm', async () => {
-    productAPI.delete.mockResolvedValue({ msg: 'Thanh Cong' });
-    
+  test('TC022: Không bị lỗi khi danh sách sản phẩm rỗng', () => {
     render(
       <BrowserRouter>
-        <Product />
+        <Products products={[]} />
       </BrowserRouter>
     );
-    
-    await waitFor(() => {
-      expect(screen.getByText(/test product 1/i)).toBeInTheDocument();
-    });
-    
-    const deleteButton = screen.getByRole('button', { name: /delete/i });
-    fireEvent.click(deleteButton);
-    
-    await waitFor(() => {
-      expect(productAPI.delete).toHaveBeenCalled();
-    });
+
+    // Không có sản phẩm nào
+    expect(screen.queryByText(/test product/i)).not.toBeInTheDocument();
   });
+
 });

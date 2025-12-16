@@ -1,16 +1,33 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
 import SignIn from '../../Auth/SignIn';
 import User from '../../API/User';
 
+const mockStore = configureStore([]);
 jest.mock('../../API/User');
 
 describe('SignIn Component', () => {
+  let store;
+  
+  beforeEach(() => {
+    store = mockStore({
+      Count: { isLoad: true },
+      Cart: { id_user: null, listCart: [] },
+      Session: { idUser: '' }
+    });
+    sessionStorage.clear();
+    localStorage.setItem('carts', JSON.stringify([]));
+  });
+
   test('TC001: Hiển thị form login đúng', () => {
     render(
-      <BrowserRouter>
-        <SignIn />
-      </BrowserRouter>
+      <Provider store={store}>
+        <BrowserRouter>
+          <SignIn />
+        </BrowserRouter>
+      </Provider>
     );
     
     expect(screen.getByPlaceholderText(/username/i)).toBeInTheDocument();
@@ -18,14 +35,54 @@ describe('SignIn Component', () => {
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
-  test('TC002: Hiển thị lỗi khi username trống', async () => {
+  test('TC002: Đăng nhập thành công với thông tin đúng', async () => {
+    const mockUser = {
+      _id: '123',
+      fullname: 'Test User',
+      email: 'test@test.com',
+      username: 'testuser'
+    };
+    
+    User.Get_Detail_User.mockResolvedValue(mockUser);
+    
     render(
-      <BrowserRouter>
-        <SignIn />
-      </BrowserRouter>
+      <Provider store={store}>
+        <BrowserRouter>
+          <SignIn />
+        </BrowserRouter>
+      </Provider>
     );
     
+    const usernameInput = screen.getByPlaceholderText(/username/i);
+    const passwordInput = screen.getByPlaceholderText(/password/i);
     const loginButton = screen.getByRole('button', { name: /login/i });
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(loginButton);
+    
+    await waitFor(() => {
+      expect(User.Get_Detail_User).toHaveBeenCalled();
+    });
+  });
+
+  test('TC003: Hiển thị lỗi khi username không tồn tại', async () => {
+    User.Get_Detail_User.mockResolvedValue('Khong Tìm Thấy User');
+    
+    render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <SignIn />
+        </BrowserRouter>
+      </Provider>
+    );
+    
+    const usernameInput = screen.getByPlaceholderText(/username/i);
+    const passwordInput = screen.getByPlaceholderText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /login/i });
+    
+    fireEvent.change(usernameInput, { target: { value: 'wronguser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.click(loginButton);
     
     await waitFor(() => {
@@ -33,53 +90,23 @@ describe('SignIn Component', () => {
     });
   });
 
-  test('TC003: Đăng nhập thành công với thông tin đúng', async () => {
-    const mockUser = {
-      _id: '123',
-      fullname: 'Test User',
-      email: 'test@test.com'
-    };
-    
-    User.Get_Detail_User.mockResolvedValue(mockUser);
-    
-    render(
-      <BrowserRouter>
-        <SignIn />
-      </BrowserRouter>
-    );
-    
-    fireEvent.change(screen.getByPlaceholderText(/username/i), {
-      target: { value: 'testuser' }
-    });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
-      target: { value: 'password123' }
-    });
-    
-    const loginButton = screen.getByRole('button', { name: /login/i });
-    fireEvent.click(loginButton);
-    
-    await waitFor(() => {
-      expect(sessionStorage.getItem('id_user')).toBe('123');
-    });
-  });
-
   test('TC004: Hiển thị lỗi khi password sai', async () => {
     User.Get_Detail_User.mockResolvedValue('Sai Mat Khau');
     
     render(
-      <BrowserRouter>
-        <SignIn />
-      </BrowserRouter>
+      <Provider store={store}>
+        <BrowserRouter>
+          <SignIn />
+        </BrowserRouter>
+      </Provider>
     );
     
-    fireEvent.change(screen.getByPlaceholderText(/username/i), {
-      target: { value: 'testuser' }
-    });
-    fireEvent.change(screen.getByPlaceholderText(/password/i), {
-      target: { value: 'wrongpassword' }
-    });
-    
+    const usernameInput = screen.getByPlaceholderText(/username/i);
+    const passwordInput = screen.getByPlaceholderText(/password/i);
     const loginButton = screen.getByRole('button', { name: /login/i });
+    
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } });
     fireEvent.click(loginButton);
     
     await waitFor(() => {

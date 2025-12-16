@@ -269,7 +269,7 @@ function Cart(props) {
                                                         <td className="quantity">
                                                             <label>Quantity</label>
                                                             <div className="cart-plus-minus">
-                                                                <input className="cart-plus-minus-box" value={value.count} type="text" />
+                                                                <input className="cart-plus-minus-box" value={value.count} type="text" readOnly/>
                                                                 <div className="dec qtybutton" onClick={() => downCount(value.count, value.id_cart)}><i className="fa fa-angle-down"></i></div>
                                                                 <div className="inc qtybutton" onClick={() => upCount(value.count, value.id_cart)}><i className="fa fa-angle-up"></i></div>
                                                             </div>

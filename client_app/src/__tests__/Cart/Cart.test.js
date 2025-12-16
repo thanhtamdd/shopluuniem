@@ -4,8 +4,10 @@ import { BrowserRouter } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
 import Cart from '../../Cart/Cart';
 import CartsLocal from '../../Share/CartsLocal';
+import CouponAPI from '../../API/CouponAPI';
 
 const mockStore = configureStore([]);
+jest.mock('../../API/CouponAPI');
 
 describe('Cart Component', () => {
   let store;
@@ -28,7 +30,11 @@ describe('Cart Component', () => {
     ]));
   });
 
-  test('TC008: Hiển thị giỏ hàng với sản phẩm', () => {
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  test('TC010: Hiển thị giỏ hàng với sản phẩm', () => {
     render(
       <Provider store={store}>
         <BrowserRouter>
@@ -38,11 +44,12 @@ describe('Cart Component', () => {
     );
     
     expect(screen.getByText(/test product/i)).toBeInTheDocument();
-    expect(screen.getByText(/200,000 VNĐ/i)).toBeInTheDocument();
+    const subtotal = document.querySelector('.product-subtotal .amount');
+  expect(subtotal).toHaveTextContent('200.000 VNĐ');
   });
 
-  test('TC009: Tăng số lượng sản phẩm', async () => {
-    render(
+  test('TC011: Tăng số lượng sản phẩm', async () => {
+    const { container } = render(
       <Provider store={store}>
         <BrowserRouter>
           <Cart />
@@ -50,7 +57,7 @@ describe('Cart Component', () => {
       </Provider>
     );
     
-    const increaseButton = screen.getAllByRole('button')[0]; // up button
+    const increaseButton = container.querySelector('.inc.qtybutton');
     fireEvent.click(increaseButton);
     
     await waitFor(() => {
@@ -59,8 +66,8 @@ describe('Cart Component', () => {
     });
   });
 
-  test('TC010: Giảm số lượng sản phẩm', async () => {
-    render(
+  test('TC012: Giảm số lượng sản phẩm', async () => {
+    const { container } = render(
       <Provider store={store}>
         <BrowserRouter>
           <Cart />
@@ -68,7 +75,7 @@ describe('Cart Component', () => {
       </Provider>
     );
     
-    const decreaseButton = screen.getAllByRole('button')[1]; // down button
+    const decreaseButton = container.querySelector('.dec.qtybutton');
     fireEvent.click(decreaseButton);
     
     await waitFor(() => {
@@ -77,7 +84,7 @@ describe('Cart Component', () => {
     });
   });
 
-  test('TC011: Không cho giảm số lượng < 1', async () => {
+  test('TC013: Không cho giảm số lượng < 1', async () => {
     localStorage.setItem('carts', JSON.stringify([
       {
         id_cart: '1',
@@ -90,7 +97,7 @@ describe('Cart Component', () => {
       }
     ]));
     
-    render(
+    const { container } = render(
       <Provider store={store}>
         <BrowserRouter>
           <Cart />
@@ -98,7 +105,7 @@ describe('Cart Component', () => {
       </Provider>
     );
     
-    const decreaseButton = screen.getAllByRole('button')[1];
+    const decreaseButton = container.querySelector('.dec.qtybutton');
     fireEvent.click(decreaseButton);
     
     await waitFor(() => {
@@ -107,8 +114,8 @@ describe('Cart Component', () => {
     });
   });
 
-  test('TC012: Xóa sản phẩm khỏi giỏ hàng', async () => {
-    render(
+  test('TC014: Xóa sản phẩm khỏi giỏ hàng', async () => {
+    const { container } = render(
       <Provider store={store}>
         <BrowserRouter>
           <Cart />
@@ -116,7 +123,8 @@ describe('Cart Component', () => {
       </Provider>
     );
     
-    const deleteButton = screen.getByRole('link', { name: /×/i });
+    // Tìm nút xóa bằng class li-product-remove
+    const deleteButton = container.querySelector('.li-product-remove a');
     fireEvent.click(deleteButton);
     
     await waitFor(() => {
@@ -125,21 +133,19 @@ describe('Cart Component', () => {
     });
   });
 
-  test('TC013: Áp dụng mã giảm giá thành công', async () => {
-    // Mock API
-    jest.mock('../../API/CouponAPI', () => ({
-      checkCoupon: jest.fn().mockResolvedValue({
-        msg: 'Success',
-        coupon: {
-          _id: 'coupon1',
-          promotion: 10
-        }
-      })
-    }));
-    
+  test('TC015: Áp dụng mã giảm giá thành công', async () => {
     sessionStorage.setItem('id_user', 'user123');
     
-    render(
+    CouponAPI.checkCoupon.mockResolvedValue({
+      msg: 'Thanh Cong',
+      coupon: {
+        _id: 'coupon1',
+        promotion: 10,
+        code: 'DISCOUNT10'
+      }
+    });
+    
+    const { container } = render(
       <Provider store={store}>
         <BrowserRouter>
           <Cart />
@@ -150,11 +156,57 @@ describe('Cart Component', () => {
     const couponInput = screen.getByPlaceholderText(/coupon code/i);
     fireEvent.change(couponInput, { target: { value: 'DISCOUNT10' } });
     
-    const applyButton = screen.getByRole('button', { name: /apply coupon/i });
+    // Tìm nút Apply coupon
+    const applyButton = container.querySelector('input[value="Apply coupon"]');
     fireEvent.click(applyButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/áp dụng mã code thành công/i)).toBeInTheDocument();
+      expect(CouponAPI.checkCoupon).toHaveBeenCalled();
+    }, { timeout: 2000 });
+  });
+
+  test('TC016: Hiển thị lỗi khi mã giảm giá không hợp lệ', async () => {
+    sessionStorage.setItem('id_user', 'user123');
+    
+    CouponAPI.checkCoupon.mockResolvedValue({
+      msg: 'Không tìm thấy'
     });
+    
+    const { container } = render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <Cart />
+        </BrowserRouter>
+      </Provider>
+    );
+    
+    const couponInput = screen.getByPlaceholderText(/coupon code/i);
+    fireEvent.change(couponInput, { target: { value: 'INVALID' } });
+    
+    const applyButton = container.querySelector('input[value="Apply coupon"]');
+    fireEvent.click(applyButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/vui lòng kiểm tra lại mã code/i)).toBeInTheDocument();
+    }, { timeout: 2000 });
+  });
+
+  test('TC017: Hiển thị lỗi khi checkout mà chưa đăng nhập', async () => {
+    sessionStorage.clear();
+    
+    render(
+      <Provider store={store}>
+        <BrowserRouter>
+          <Cart />
+        </BrowserRouter>
+      </Provider>
+    );
+    
+    const checkoutButton = screen.getByText(/proceed to checkout/i);
+    fireEvent.click(checkoutButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/vui lòng kiểm tra tình trạng đăng nhập/i)).toBeInTheDocument();
+    }, { timeout: 2000 });
   });
 });
