@@ -44,7 +44,8 @@ describe('Cart Component', () => {
     );
     
     expect(screen.getByText(/test product/i)).toBeInTheDocument();
-    expect(screen.getByText(/200,000 VNĐ/i)).toBeInTheDocument();
+    const subtotal = document.querySelector('.product-subtotal .amount');
+  expect(subtotal).toHaveTextContent('200.000 VNĐ');
   });
 
   test('TC011: Tăng số lượng sản phẩm', async () => {

@@ -132,7 +132,7 @@ describe('Checkout Component', () => {
     
     await waitFor(() => {
       // Tổng = Giá sản phẩm (200,000) + Phí ship (25,000) = 225,000
-      expect(screen.getByText(/225,000 VNĐ/i)).toBeInTheDocument();
+      expect(screen.getByText(/225\.000 VNĐ/i)).toBeInTheDocument();
     });
   });
 });
