@@ -14,6 +14,9 @@ jest.mock('../component/Api/userAPI', () => ({
 jest.mock('../component/Api/permissionAPI', () => ({
   getAPI: jest.fn()
 }));
+beforeAll(() => {
+  window.scrollTo = jest.fn();
+});
 
 describe('UpdateUser Component', () => {
   const permissionsMock = [{ _id: '1', permission: 'Admin' }];
@@ -54,10 +57,10 @@ describe('UpdateUser Component', () => {
 
     await waitFor(() => screen.getByDisplayValue('User One'));
 
-    fireEvent.change(screen.getByLabelText(/Name:/i), { target: { value: 'Updated User' } });
+    fireEvent.change(screen.getByLabelText(/Name:/), { target: { value: 'Updated User' } });
     fireEvent.change(screen.getByLabelText(/Username:/i), { target: { value: 'updateduser' } });
     fireEvent.change(screen.getByLabelText(/Email:/i), { target: { value: 'updated@test.com' } });
-
+    fireEvent.change(screen.getByLabelText(/Chọn quyền/i), {target: { value: '1' }});
     fireEvent.click(screen.getByRole('button', { name: /Update/i }));
 
     await waitFor(() => {

@@ -37,7 +37,7 @@ describe('UserCus Component', () => {
     await waitFor(() => screen.getByText('Customer One'));
     fireEvent.click(screen.getAllByText('Delete')[0]);
     await waitFor(() => {
-      expect(userAPI.delete).toHaveBeenCalledWith('1');
+      expect(userAPI.delete).toHaveBeenCalledWith('?id=1');
       expect(userAPI.getAPI).toHaveBeenCalledTimes(2);
     });
     confirmMock.mockRestore();

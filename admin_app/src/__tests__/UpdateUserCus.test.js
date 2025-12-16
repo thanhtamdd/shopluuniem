@@ -41,7 +41,7 @@ describe('UpdateUserCus Component', () => {
   test('calls update API on submit', async () => {
     render(<Router><UpdateUserCus match={{ params: { id: '1' } }} /></Router>);
     await waitFor(() => screen.getByDisplayValue('Customer One'));
-    fireEvent.change(screen.getByLabelText(/Name:/i), { target: { value: 'Updated Customer' } });
+    fireEvent.change(screen.getByLabelText(/Name:/), { target: { value: 'Updated Customer' } });
     fireEvent.click(screen.getByRole('button', { name: /Update/i }));
     await waitFor(() => expect(userApi.update).toHaveBeenCalled());
   });

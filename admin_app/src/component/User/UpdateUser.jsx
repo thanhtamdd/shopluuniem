@@ -41,9 +41,10 @@ function UpdateUser(props) {
         }
 
 
-        if (isEmpty(permissionChoose)) {
-            msg.permission = "Vui lòng chọn quyền"
-        }
+        if (isEmpty(permissionChoose || "")) {
+        msg.permission = "Vui lòng chọn quyền";
+        } 
+
         setValidationMsg(msg)
         if (Object.keys(msg).length > 0) return false;
         return true;
@@ -58,22 +59,21 @@ function UpdateUser(props) {
 
 
     const addUser = async () => {
-        const user = {
-            id: id,
-            name: name,
-            password: password,
-            permission: permissionChoose
-        }
-        const query = '?' + queryString.stringify(user)
-        const response = await userApi.update(query)
+    const response = await userApi.update(id, {
+        fullname: name,
+        username: username,
+        email: email,
+        password: password,
+        permission: permissionChoose
+    });
 
-        if (response.msg === "Bạn đã update thành công") {
-            window.scrollTo(0, 0)
-            setPassword('');
-        }
-        setValidationMsg({ api: response.msg })
-
+    if (response.msg === "Bạn đã update thành công") {
+        window.scrollTo(0, 0);
+        setPassword('');
     }
+    setValidationMsg({ api: response.msg });
+};
+
 
     return (
         <div className="page-wrapper">
@@ -104,12 +104,24 @@ function UpdateUser(props) {
 
                                     <div className="form-group w-50">
                                         <label htmlFor="email">Email:</label>
-                                        <input type="text" className="form-control" id="email" name="email" value={email} disabled />
+                                        <input
+                                        type="text"
+                                        className="form-control"
+                                        id="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        />
                                     </div>
 
                                     <div className="form-group w-50">
                                         <label htmlFor="username">Username:</label>
-                                        <input type="text" className="form-control" id="username" name="username" value={username} disabled />
+                                        <input
+                                        type="text"
+                                        className="form-control"
+                                        id="username"
+                                        value={username}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        />
                                     </div>
 
                                     <div className="form-group w-50">

@@ -104,8 +104,9 @@ function Login() {
             >
               <div className="row">
                 <div className="col-lg-12">
-                  <label>Email / Username</label>
+                  <label htmlFor="username">Email / Username</label>
                   <input
+                    id="username"
                     className="form-control"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
@@ -118,8 +119,9 @@ function Login() {
                 </div>
 
                 <div className="col-lg-12">
-                  <label>Password</label>
+                  <label htmlFor="password">Password</label>
                   <input
+                    id="password"
                     type="password"
                     className="form-control"
                     value={password}
