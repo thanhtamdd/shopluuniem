@@ -7,7 +7,7 @@ import userApi from '../Api/userAPI';
 import permissionAPI from '../Api/permissionAPI';
 
 function CreateUser() {
-  const history = useHistory(); // v5 dùng useHistory
+  const history = useHistory();
   const [permission, setPermission] = useState([]);
   const [name, setName] = useState('');
   const [username, setUserName] = useState('');
@@ -17,14 +17,13 @@ function CreateUser() {
   const [validationMsg, setValidationMsg] = useState({});
   const [loading, setLoading] = useState(false);
 
-  // Lấy danh sách quyền
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
         const ps = await permissionAPI.getAPI();
         setPermission(ps);
       } catch (err) {
-        console.error('Fetch permission error:', err);
+        console.error(err);
       }
     };
     fetchPermissions();
@@ -58,24 +57,22 @@ function CreateUser() {
     setLoading(true);
     try {
       const user = { name, username, email, password, permission: permissionChoose };
-      const response = await userApi.create(user); // gửi POST body JSON
+      const response = await userApi.create(user);
 
       if (response.msg === "Bạn đã thêm thành công") {
         alert(response.msg);
-        // Reset form
         setName('');
         setUserName('');
         setEmail('');
         setPassword('');
         setPermissionChoose('');
         setValidationMsg({});
-        // Redirect về trang user
         history.push('/user');
       } else {
         setValidationMsg({ api: response.msg });
       }
     } catch (err) {
-      console.error('Create user error:', err);
+      console.error(err);
       setValidationMsg({ api: 'Server không phản hồi' });
     } finally {
       setLoading(false);
@@ -87,59 +84,42 @@ function CreateUser() {
       <div className="container-fluid">
         <div className="card">
           <div className="card-body">
-            <h4 className="card-title">Create User</h4>
-
-            {validationMsg.api && (
-              <div className={`alert ${validationMsg.api === "Bạn đã thêm thành công" ? "alert-success" : "alert-danger"} alert-dismissible fade show`} role="alert">
-                {validationMsg.api}
+            <h4>Create User</h4>
+            {validationMsg.api && <div role="alert">{validationMsg.api}</div>}
+            <form onSubmit={handleCreate} aria-label="create-user-form">
+              <div>
+                <label htmlFor="name">Name:</label>
+                <input id="name" value={name} onChange={e => setName(e.target.value)} />
+                <span>{validationMsg.name}</span>
               </div>
-            )}
-
-            <form onSubmit={handleCreate}>
-              <div className="form-group w-50">
-                <label>Name:</label>
-                <input type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} />
-                <small className="form-text text-danger">{validationMsg.name}</small>
+              <div>
+                <label htmlFor="username">Username:</label>
+                <input id="username" value={username} onChange={e => setUserName(e.target.value)} />
+                <span>{validationMsg.username}</span>
               </div>
-
-              <div className="form-group w-50">
-                <label>Username:</label>
-                <input type="text" className="form-control" value={username} onChange={e => setUserName(e.target.value)} />
-                <small className="form-text text-danger">{validationMsg.username}</small>
+              <div>
+                <label htmlFor="email">Email:</label>
+                <input id="email" value={email} onChange={e => setEmail(e.target.value)} />
+                <span>{validationMsg.email}</span>
               </div>
-
-              <div className="form-group w-50">
-                <label>Email:</label>
-                <input type="text" className="form-control" value={email} onChange={e => setEmail(e.target.value)} />
-                <small className="form-text text-danger">{validationMsg.email}</small>
+              <div>
+                <label htmlFor="password">Password:</label>
+                <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
+                <span>{validationMsg.password}</span>
               </div>
-
-              <div className="form-group w-50">
-                <label>Password:</label>
-                <input type="password" className="form-control" value={password} onChange={e => setPassword(e.target.value)} />
-                <small className="form-text text-danger">{validationMsg.password}</small>
-              </div>
-
-              <div className="form-group w-50">
-                <label>Chọn quyền:</label>
-                <select className="form-control" value={permissionChoose} onChange={e => setPermissionChoose(e.target.value)}>
+              <div>
+                <label htmlFor="permissionChoose">Chọn quyền:</label>
+                <select id="permissionChoose" value={permissionChoose} onChange={e => setPermissionChoose(e.target.value)}>
                   <option value="">Chọn quyền</option>
-                  {permission.map(item => <option key={item._id} value={item._id}>{item.permission}</option>)}
+                  {permission.map(p => <option key={p._id} value={p._id}>{p.permission}</option>)}
                 </select>
-                <small className="form-text text-danger">{validationMsg.permission}</small>
+                <span>{validationMsg.permission}</span>
               </div>
-
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Creating...' : 'Create'}
-              </button>
+              <button type="submit" disabled={loading}>{loading ? 'Creating...' : 'Create'}</button>
             </form>
           </div>
         </div>
       </div>
-
-      <footer className="footer text-center text-muted mt-3">
-        All Rights Reserved by Adminmart. Designed and Developed by <a href="https://wrappixel.com">WrapPixel</a>.
-      </footer>
     </div>
   );
 }
