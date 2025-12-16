@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=TestPassword123!
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "SELECT 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./server_app
+    environment:
+      - DB_SERVER=sqlserver
+      - DB_PASSWORD=TestPassword123!
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  admin:
+    build: ./admin_app
+    environment:
+      - REACT_APP_API_URL=http://backend:8000/api
+    ports:
+      - "3001:3001"
+
+  client:
+    build: ./client_app
+    environment:
+      - REACT_APP_API_URL=http://backend:8000/api
+    ports:
+      - "3000:3000"

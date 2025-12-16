@@ -1,0 +1,86 @@
+# ============================================
+# Alternative: GitLab CI/CD
+# File: .gitlab-ci.yml
+# ============================================
+
+image: node:16
+
+stages:
+  - test
+  - security
+  - build
+  - deploy
+
+variables:
+  NODE_ENV: test
+
+cache:
+  paths:
+    - node_modules/
+    - server_app/node_modules/
+    - admin_app/node_modules/
+    - client_app/node_modules/
+
+before_script:
+  - npm ci
+
+# Backend Tests
+backend-test:
+  stage: test
+  script:
+    - cd server_app
+    - npm ci
+    - npm test -- --coverage
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: server_app/coverage/cobertura-coverage.xml
+
+# Admin App Tests
+admin-test:
+  stage: test
+  script:
+    - cd admin_app
+    - npm ci
+    - npm test -- --coverage --watchAll=false
+  artifacts:
+    reports:
+      junit: admin_app/junit.xml
+
+# Client App Tests
+client-test:
+  stage: test
+  script:
+    - cd client_app
+    - npm ci
+    - npm test -- --coverage --watchAll=false
+
+# Security Scan
+security-scan:
+  stage: security
+  script:
+    - npm audit --production --audit-level=moderate
+  allow_failure: true
+
+# Build
+build-apps:
+  stage: build
+  script:
+    - cd admin_app && npm run build
+    - cd ../client_app && npm run build
+  artifacts:
+    paths:
+      - admin_app/build/
+      - client_app/build/
+    expire_in: 1 week
+
+# Deploy
+deploy-production:
+  stage: deploy
+  script:
+    - echo "Deploying to production..."
+  only:
+    - main
+  when: manual

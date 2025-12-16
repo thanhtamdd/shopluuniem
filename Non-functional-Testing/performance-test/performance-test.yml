@@ -1,0 +1,72 @@
+config:
+  target: "http://localhost:8000"
+  phases:
+    # Phase 1: Warm up - 10 users trong 30s
+    - duration: 30
+      arrivalRate: 10
+      name: "Warm up"
+    
+    # Phase 2: Ramp up - tăng dần từ 10 lên 50 users trong 1 phút
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp up load"
+    
+    # Phase 3: Sustained load - 100 users trong 2 phút
+    - duration: 120
+      arrivalRate: 100
+      name: "Sustained load"
+    
+    # Phase 4: Spike - đột ngột tăng lên 200 users trong 30s
+    - duration: 30
+      arrivalRate: 200
+      name: "Spike test"
+
+  # Ngưỡng chấp nhận được
+  ensure:
+    maxErrorRate: 1  # Tối đa 1% lỗi
+    p95: 2000        # 95% requests phải < 2s
+    p99: 3000        # 99% requests phải < 3s
+
+scenarios:
+  # Scenario 1: Browse products
+  - name: "Browse Products"
+    weight: 50
+    flow:
+      - get:
+          url: "/api/Product"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      - think: 2  # User đọc trong 2s
+      
+      - get:
+          url: "/api/Category"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  # Scenario 2: View product details
+  - name: "View Product Detail"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/Product"
+      - think: 1
+      
+      - get:
+          url: "/api/Product/detail/1"
+          expect:
+            - statusCode: 200
+            - hasProperty: ProductID
+      - think: 5  # User xem chi tiết 5s
+
+  # Scenario 3: Search products
+  - name: "Search Products"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/Product/category/pagination?page=1&limit=8&search=test"
+          expect:
+            - statusCode: 200
+      - think: 2
