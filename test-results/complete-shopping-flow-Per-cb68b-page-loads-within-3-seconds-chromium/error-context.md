@@ -1,0 +1,123 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e7]:
+        - listitem [ref=e9]:
+          - text: "Telephone Enquiry:"
+          - link "(+123) 123 321 345" [ref=e10] [cursor=pointer]:
+            - /url: "#"
+        - list [ref=e12]:
+          - listitem [ref=e13]:
+            - generic [ref=e14] [cursor=pointer]: Setting
+      - generic [ref=e15]:
+        - generic [ref=e17]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e21]
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - textbox "Enter your search key ..." [ref=e24]
+              - button "" [ref=e25] [cursor=pointer]:
+                - generic [ref=e26]: 
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - listitem [ref=e30]:
+                  - generic [ref=e31] [cursor=pointer]:
+                    - generic: 
+                    - generic [ref=e32]:
+                      - text: 0 VNĐ
+                      - generic [ref=e33]: "0"
+                      - text: 
+        - navigation [ref=e39]:
+          - list [ref=e40]:
+            - listitem [ref=e41]:
+              - link "Home" [ref=e42] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e43]:
+              - link "Menu" [ref=e44] [cursor=pointer]:
+                - /url: /shop/all
+            - listitem [ref=e45]:
+              - link "Event" [ref=e46] [cursor=pointer]:
+                - /url: /event
+            - listitem [ref=e47]:
+              - link "Contact" [ref=e48] [cursor=pointer]:
+                - /url: /contact
+    - generic [ref=e49]:
+      - generic [ref=e56]:
+        - link [ref=e58] [cursor=pointer]:
+          - /url: "#"
+        - link [ref=e60] [cursor=pointer]:
+          - /url: "#"
+      - list [ref=e66]:
+        - listitem [ref=e67]:
+          - link "Sale" [ref=e68] [cursor=pointer]:
+            - /url: "#"
+      - generic [ref=e71]:
+        - link "Li's Static Banner" [ref=e74] [cursor=pointer]:
+          - /url: "#"
+          - img "Li's Static Banner" [ref=e75]
+        - link "Li's Static Banner" [ref=e78] [cursor=pointer]:
+          - /url: "#"
+          - img "Li's Static Banner" [ref=e79]
+        - link "Li's Static Banner" [ref=e82] [cursor=pointer]:
+          - /url: "#"
+          - img "Li's Static Banner" [ref=e83]
+      - heading "Male" [level=2] [ref=e89]:
+        - generic [ref=e90]: Male
+      - heading "Female" [level=2] [ref=e96]:
+        - generic [ref=e97]: Female
+    - generic [ref=e102]:
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - img "Footer Logo" [ref=e105]
+          - paragraph [ref=e106]: We are a team of designers and developers that create high quality HTML Template & Woocommerce, Shopify Theme.
+        - list [ref=e107]:
+          - listitem [ref=e108]: "Address: 828 Sư Vạn Hạnh, Quận 10, TP.HCM"
+          - listitem [ref=e109]:
+            - text: "Phone:"
+            - link "0763557366" [ref=e110] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e111]:
+            - text: "Email:"
+            - link "tienkim9920@gmail.com" [ref=e112] [cursor=pointer]:
+              - /url: mailto://tienkim9920@gmail.com
+      - generic [ref=e114]:
+        - heading "Product" [level=3] [ref=e115] [cursor=pointer]
+        - list [ref=e116]:
+          - listitem [ref=e117]:
+            - link "Prices drop" [ref=e118] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e119]:
+            - link "New products" [ref=e120] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e121]:
+            - link "Best sales" [ref=e122] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e123]:
+            - link "Contact us" [ref=e124] [cursor=pointer]:
+              - /url: "#"
+      - generic [ref=e126]:
+        - heading "Our company" [level=3] [ref=e127] [cursor=pointer]
+        - list [ref=e128]:
+          - listitem [ref=e129]:
+            - link "Delivery" [ref=e130] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e131]:
+            - link "Legal Notice" [ref=e132] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e133]:
+            - link "About us" [ref=e134] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e135]:
+            - link "Contact us" [ref=e136] [cursor=pointer]:
+              - /url: "#"
+      - generic [ref=e138]:
+        - heading "Sign up to newsletter" [level=4] [ref=e139] [cursor=pointer]
+        - generic [ref=e140]:
+          - textbox "Enter your email" [ref=e141]
+          - button "Subscribe" [ref=e142] [cursor=pointer]
+  - text: ","
+```
