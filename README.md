@@ -7,7 +7,7 @@
     <b>- Live Chat ( Tư Vấn Khách Hàng ) </b> </br>
     <b>- Gửi Email để xác nhận đơn hàng </b> </br>
     <b>- Thanh Toán Paypal  </b> </br>
-    <b>- Giao Hàng ( Hiển thị và tính giá tiền của đơn hàng phụ thuộc vào quảng đường từ cửa hàng đến địa điểm nhận hàng của khách hàng và hiển thị bằng Google Map API )  </b> </br>
+    <b>- Giao Hàng ( Hiển thị và tính giá tiền của đơn hàng phụ thuộc vào quảng đường từ cửa hàng đến địa điểm nhận hàng của khách hàng và hiển thị bằng Google Map API)  </b> </br>
 
 
 ---------------------------------------------------------------
