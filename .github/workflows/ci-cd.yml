@@ -38,9 +38,9 @@ jobs:
       
       - name: Install dependencies
         run: |
-          cd server_app && npm ci
-          cd ../admin_app && npm ci
-          cd ../client_app && npm ci
+          cd server_app && npm install
+          cd ../admin_app && npm install
+          cd ../client_app && npm install
       
       - name: Run ESLint
         run: |
@@ -85,7 +85,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd server_app
-          npm ci
+          npm install
       
       - name: Setup test database
         run: |
@@ -126,7 +126,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd admin_app
-          npm ci
+          npm install
       
       - name: Run admin app tests
         run: |
@@ -158,7 +158,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd client_app
-          npm ci
+          npm install
       
       - name: Run client app tests
         run: |
@@ -189,9 +189,9 @@ jobs:
       
       - name: Install dependencies
         run: |
-          cd server_app && npm ci
-          cd ../admin_app && npm ci
-          cd ../client_app && npm ci
+          cd server_app && npm install
+          cd ../admin_app && npm install
+          cd ../client_app && npm install
 
       
       - name: Run npm audit
@@ -239,7 +239,7 @@ jobs:
       - name: Start application
         run: |
           cd server_app
-          npm ci
+          npm install
           npm start &
           sleep 10
       
@@ -269,17 +269,17 @@ jobs:
       
       - name: Install dependencies
         run: |
-          cd server_app && npm ci
-          cd ../admin_app && npm ci
-          cd ../client_app && npm ci
+          cd server_app && npm install
+          cd ../admin_app && npm install
+          cd ../client_app && npm install
           npx playwright install --with-deps
 
       
       - name: Start applications
         run: |
-          cd server_app && npm ci && npm start &
-          cd ../admin_app && npm ci && npm start &
-          cd ../client_app && npm ci && npm start &
+          cd server_app && npm install && npm start &
+          cd ../admin_app && npm install && npm start &
+          cd ../client_app && npm install && npm start &
           sleep 30
       
       - name: Run E2E tests
@@ -311,13 +311,13 @@ jobs:
       - name: Build Admin App
         run: |
           cd admin_app
-          npm ci
+          npm install
           npm run build
       
       - name: Build Client App
         run: |
           cd client_app
-          npm ci
+          npm install
           npm run build
       
       - name: Deploy to production
