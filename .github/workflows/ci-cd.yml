@@ -84,10 +84,7 @@ jobs:
 
       - name: Run backend tests
         env:
-          NODE_ENV: test
           DB_SERVER: localhost
-          DB_PORT: 1433
-          DB_USER: sa
           DB_PASSWORD: TestPassword123!
           DB_NAME: shopluuniem_test
         run: |
