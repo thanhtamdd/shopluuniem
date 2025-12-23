@@ -38,7 +38,6 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm ci
           cd server_app && npm ci
           cd ../admin_app && npm ci
           cd ../client_app && npm ci
@@ -189,11 +188,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd server_app && npm ci
+          cd ../admin_app && npm ci
+          cd ../client_app && npm ci
+
       
       - name: Run npm audit
         run: |
-          npm audit --production --audit-level=high
           cd server_app && npm audit --production --audit-level=high
           cd ../admin_app && npm audit --production --audit-level=high
           cd ../client_app && npm audit --production --audit-level=high
@@ -267,8 +269,11 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm ci
+          cd server_app && npm ci
+          cd ../admin_app && npm ci
+          cd ../client_app && npm ci
           npx playwright install --with-deps
+
       
       - name: Start applications
         run: |
