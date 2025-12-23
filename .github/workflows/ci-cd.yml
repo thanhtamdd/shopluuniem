@@ -58,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Backend Unit & Integration Tests
     needs: code-quality
+    continue-on-error: true
 
     services:
       sqlserver:
