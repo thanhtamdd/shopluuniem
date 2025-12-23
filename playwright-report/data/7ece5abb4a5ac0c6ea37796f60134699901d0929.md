@@ -1,0 +1,99 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e7]:
+        - listitem [ref=e9]:
+          - text: "Telephone Enquiry:"
+          - link "(+123) 123 321 345" [ref=e10]:
+            - /url: "#"
+        - list [ref=e12]:
+          - listitem [ref=e13]:
+            - generic [ref=e14] [cursor=pointer]: Setting
+      - generic [ref=e15]:
+        - generic [ref=e17]:
+          - link [ref=e20]:
+            - /url: /
+            - img [ref=e21]
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - textbox "Enter your search key ..." [ref=e24]
+              - button "" [ref=e25] [cursor=pointer]:
+                - generic [ref=e26]: 
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - listitem [ref=e30]:
+                  - generic [ref=e31] [cursor=pointer]:
+                    - generic: 
+                    - generic [ref=e32]:
+                      - text: 0 VNĐ
+                      - generic [ref=e33]: "0"
+                      - text: 
+        - navigation [ref=e39]:
+          - list [ref=e40]:
+            - listitem [ref=e41]:
+              - link "Home" [ref=e42]:
+                - /url: /
+            - listitem [ref=e43]:
+              - link "Menu" [ref=e44]:
+                - /url: /shop/all
+            - listitem [ref=e45]:
+              - link "Event" [ref=e46]:
+                - /url: /event
+            - listitem [ref=e47]:
+              - link "Contact" [ref=e48]:
+                - /url: /contact
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - img "Footer Logo" [ref=e66]
+          - paragraph [ref=e67]: We are a team of designers and developers that create high quality HTML Template & Woocommerce, Shopify Theme.
+        - list [ref=e68]:
+          - listitem [ref=e69]: "Address: 828 Sư Vạn Hạnh, Quận 10, TP.HCM"
+          - listitem [ref=e70]:
+            - text: "Phone:"
+            - link "0763557366" [ref=e71]:
+              - /url: "#"
+          - listitem [ref=e72]:
+            - text: "Email:"
+            - link "tienkim9920@gmail.com" [ref=e73]:
+              - /url: mailto://tienkim9920@gmail.com
+      - generic [ref=e75]:
+        - heading "Product" [level=3] [ref=e76] [cursor=pointer]
+        - list [ref=e77]:
+          - listitem [ref=e78]:
+            - link "Prices drop" [ref=e79]:
+              - /url: "#"
+          - listitem [ref=e80]:
+            - link "New products" [ref=e81]:
+              - /url: "#"
+          - listitem [ref=e82]:
+            - link "Best sales" [ref=e83]:
+              - /url: "#"
+          - listitem [ref=e84]:
+            - link "Contact us" [ref=e85]:
+              - /url: "#"
+      - generic [ref=e87]:
+        - heading "Our company" [level=3] [ref=e88] [cursor=pointer]
+        - list [ref=e89]:
+          - listitem [ref=e90]:
+            - link "Delivery" [ref=e91]:
+              - /url: "#"
+          - listitem [ref=e92]:
+            - link "Legal Notice" [ref=e93]:
+              - /url: "#"
+          - listitem [ref=e94]:
+            - link "About us" [ref=e95]:
+              - /url: "#"
+          - listitem [ref=e96]:
+            - link "Contact us" [ref=e97]:
+              - /url: "#"
+      - generic [ref=e99]:
+        - heading "Sign up to newsletter" [level=4] [ref=e100] [cursor=pointer]
+        - generic [ref=e101]:
+          - textbox "Enter your email" [ref=e102]
+          - button "Subscribe" [ref=e103] [cursor=pointer]
+  - text: ","
+```

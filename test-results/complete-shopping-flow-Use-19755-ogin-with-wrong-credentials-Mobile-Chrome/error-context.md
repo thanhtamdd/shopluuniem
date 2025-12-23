@@ -1,0 +1,105 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e7]:
+        - listitem [ref=e9]:
+          - text: "Telephone Enquiry:"
+          - link "(+123) 123 321 345" [ref=e10] [cursor=pointer]:
+            - /url: "#"
+        - list [ref=e12]:
+          - listitem [ref=e13]:
+            - generic [ref=e14] [cursor=pointer]: Setting
+      - generic [ref=e15]:
+        - generic [ref=e17]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /
+            - img [ref=e21]
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - textbox "Enter your search key ..." [ref=e24]
+              - button "" [ref=e25] [cursor=pointer]:
+                - generic [ref=e26]: 
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - listitem [ref=e30]:
+                  - generic [ref=e31] [cursor=pointer]:
+                    - generic: 
+                    - generic [ref=e32]:
+                      - text: 0 VNĐ
+                      - generic [ref=e33]: "0"
+                      - text: 
+        - navigation [ref=e39]:
+          - list [ref=e40]:
+            - listitem [ref=e41]:
+              - link "Home" [ref=e42] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e43]:
+              - link "Menu" [ref=e44] [cursor=pointer]:
+                - /url: /shop/all
+            - listitem [ref=e45]:
+              - link "Event" [ref=e46] [cursor=pointer]:
+                - /url: /event
+            - listitem [ref=e47]:
+              - link "Contact" [ref=e48] [cursor=pointer]:
+                - /url: /contact
+    - generic [ref=e55]:
+      - paragraph [ref=e56]: "Sort By:"
+      - combobox [ref=e57] [cursor=pointer]:
+        - option "Relevance" [selected]
+        - option "Price (Low > High)"
+        - option "Price (High > Low)"
+    - generic [ref=e76]:
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - img "Footer Logo" [ref=e79]
+          - paragraph [ref=e80]: We are a team of designers and developers that create high quality HTML Template & Woocommerce, Shopify Theme.
+        - list [ref=e81]:
+          - listitem [ref=e82]: "Address: 828 Sư Vạn Hạnh, Quận 10, TP.HCM"
+          - listitem [ref=e83]:
+            - text: "Phone:"
+            - link "0763557366" [ref=e84] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e85]:
+            - text: "Email:"
+            - link "tienkim9920@gmail.com" [ref=e86] [cursor=pointer]:
+              - /url: mailto://tienkim9920@gmail.com
+      - generic [ref=e88]:
+        - heading "Product" [level=3] [ref=e89] [cursor=pointer]
+        - list [ref=e90]:
+          - listitem [ref=e91]:
+            - link "Prices drop" [ref=e92] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e93]:
+            - link "New products" [ref=e94] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e95]:
+            - link "Best sales" [ref=e96] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e97]:
+            - link "Contact us" [ref=e98] [cursor=pointer]:
+              - /url: "#"
+      - generic [ref=e100]:
+        - heading "Our company" [level=3] [ref=e101] [cursor=pointer]
+        - list [ref=e102]:
+          - listitem [ref=e103]:
+            - link "Delivery" [ref=e104] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e105]:
+            - link "Legal Notice" [ref=e106] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e107]:
+            - link "About us" [ref=e108] [cursor=pointer]:
+              - /url: "#"
+          - listitem [ref=e109]:
+            - link "Contact us" [ref=e110] [cursor=pointer]:
+              - /url: "#"
+      - generic [ref=e112]:
+        - heading "Sign up to newsletter" [level=4] [ref=e113] [cursor=pointer]
+        - generic [ref=e114]:
+          - textbox "Enter your email" [ref=e115]
+          - button "Subscribe" [ref=e116] [cursor=pointer]
+  - text: ","
+```

@@ -1,0 +1,136 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e7]:
+        - listitem [ref=e9]:
+          - text: "Telephone Enquiry:"
+          - link "(+123) 123 321 345" [ref=e10]:
+            - /url: "#"
+        - list [ref=e12]:
+          - listitem [ref=e13]:
+            - generic [ref=e14] [cursor=pointer]: Setting
+      - generic [ref=e15]:
+        - generic [ref=e17]:
+          - link [ref=e20]:
+            - /url: /
+            - img [ref=e21]
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - textbox "Enter your search key ..." [ref=e24]
+              - button "" [ref=e25] [cursor=pointer]:
+                - generic [ref=e26]: 
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - listitem [ref=e30]:
+                  - generic [ref=e31] [cursor=pointer]:
+                    - generic: 
+                    - generic [ref=e32]:
+                      - text: 0 VNĐ
+                      - generic [ref=e33]: "0"
+                      - text: 
+        - navigation [ref=e39]:
+          - list [ref=e40]:
+            - listitem [ref=e41]:
+              - link "Home" [ref=e42]:
+                - /url: /
+            - listitem [ref=e43]:
+              - link "Menu" [ref=e44]:
+                - /url: /shop/all
+            - listitem [ref=e45]:
+              - link "Event" [ref=e46]:
+                - /url: /event
+            - listitem [ref=e47]:
+              - link "Contact" [ref=e48]:
+                - /url: /contact
+    - generic [ref=e49]:
+      - list [ref=e53]:
+        - listitem [ref=e54]:
+          - link "Home" [ref=e55]:
+            - /url: /
+        - listitem [ref=e56]: Detail
+      - generic [ref=e59]:
+        - img "product image" [ref=e64]
+        - generic [ref=e67]:
+          - heading [level=2]
+          - generic [ref=e68]: NaN VNĐ
+          - paragraph [ref=e70]: Lorem ipsum dolor sit amet consectetur adipisicing elit. Vel harum tenetur delectus nam quam assumenda? Soluta vitae tempora ratione excepturi doloremque, repudiandae ullam, eum corporis, itaque dolor aperiam enim aspernatur.
+          - generic [ref=e72]:
+            - generic [ref=e73]: Size
+            - combobox [ref=e74] [cursor=pointer]:
+              - option "S" [selected]
+              - option "M"
+              - option "L"
+          - generic [ref=e76]:
+            - generic [ref=e77]:
+              - generic [ref=e78]: Quantity
+              - generic [ref=e79]:
+                - textbox [ref=e80]: "1"
+                - generic [ref=e82] [cursor=pointer]: 
+                - generic [ref=e84] [cursor=pointer]: 
+            - link "Add to cart" [ref=e85] [cursor=pointer]:
+              - /url: "#"
+      - generic [ref=e87]:
+        - list [ref=e91]:
+          - listitem [ref=e92]:
+            - link "Description" [ref=e93] [cursor=pointer]:
+              - /url: "#description"
+          - listitem [ref=e94]:
+            - link "Reviews" [ref=e95] [cursor=pointer]:
+              - /url: "#reviews"
+        - tabpanel [ref=e97]:
+          - generic [ref=e98]: The best is yet to come! Give your walls a voice with a framed poster. This aesthethic, optimistic poster will look great in your desk or in an open-space office. Painted wooden frame with passe-partout for more depth.
+    - generic [ref=e103]:
+      - generic [ref=e104]:
+        - generic [ref=e105]:
+          - img "Footer Logo" [ref=e106]
+          - paragraph [ref=e107]: We are a team of designers and developers that create high quality HTML Template & Woocommerce, Shopify Theme.
+        - list [ref=e108]:
+          - listitem [ref=e109]: "Address: 828 Sư Vạn Hạnh, Quận 10, TP.HCM"
+          - listitem [ref=e110]:
+            - text: "Phone:"
+            - link "0763557366" [ref=e111]:
+              - /url: "#"
+          - listitem [ref=e112]:
+            - text: "Email:"
+            - link "tienkim9920@gmail.com" [ref=e113]:
+              - /url: mailto://tienkim9920@gmail.com
+      - generic [ref=e115]:
+        - heading "Product" [level=3] [ref=e116] [cursor=pointer]
+        - list [ref=e117]:
+          - listitem [ref=e118]:
+            - link "Prices drop" [ref=e119]:
+              - /url: "#"
+          - listitem [ref=e120]:
+            - link "New products" [ref=e121]:
+              - /url: "#"
+          - listitem [ref=e122]:
+            - link "Best sales" [ref=e123]:
+              - /url: "#"
+          - listitem [ref=e124]:
+            - link "Contact us" [ref=e125]:
+              - /url: "#"
+      - generic [ref=e127]:
+        - heading "Our company" [level=3] [ref=e128] [cursor=pointer]
+        - list [ref=e129]:
+          - listitem [ref=e130]:
+            - link "Delivery" [ref=e131]:
+              - /url: "#"
+          - listitem [ref=e132]:
+            - link "Legal Notice" [ref=e133]:
+              - /url: "#"
+          - listitem [ref=e134]:
+            - link "About us" [ref=e135]:
+              - /url: "#"
+          - listitem [ref=e136]:
+            - link "Contact us" [ref=e137]:
+              - /url: "#"
+      - generic [ref=e139]:
+        - heading "Sign up to newsletter" [level=4] [ref=e140] [cursor=pointer]
+        - generic [ref=e141]:
+          - textbox "Enter your email" [ref=e142]
+          - button "Subscribe" [ref=e143] [cursor=pointer]
+  - text: ","
+```
