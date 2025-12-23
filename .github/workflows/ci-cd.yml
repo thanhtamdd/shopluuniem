@@ -54,7 +54,7 @@ jobs:
         continue-on-error: true
 
   # ===== JOB 2: BACKEND UNIT TESTS =====
-    backend-tests:
+  backend-tests:
     runs-on: ubuntu-latest
     name: Backend Unit & Integration Tests
     needs: code-quality
