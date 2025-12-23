@@ -12,7 +12,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  NODE_VERSION: '16.x'
+  NODE_VERSION: '20.x'
   SKIP_PREFLIGHT_CHECK: true
   DB_SERVER: localhost
   DB_PORT: 1433
@@ -31,13 +31,14 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
       - name: Install dependencies
         run: |
+          npm ci
           cd server_app && npm ci
           cd ../admin_app && npm ci
           cd ../client_app && npm ci
@@ -78,7 +79,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
@@ -119,7 +120,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
@@ -151,7 +152,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
@@ -183,7 +184,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
@@ -226,7 +227,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
@@ -260,7 +261,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
@@ -298,7 +299,7 @@ jobs:
         uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
       
