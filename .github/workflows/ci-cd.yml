@@ -83,10 +83,16 @@ jobs:
           cd server_app
           npm install
       
-      - name: Setup test database
-        run: |
-          docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "CREATE DATABASE shopluuniem_test"
-          docker exec sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -d shopluuniem_test -i /server_app/database/schema.sql || true
+      - name: Install sqlcmd
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y mssql-tools unixodbc-dev
+
+- name: Setup test database
+  run: |
+    /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q "CREATE DATABASE shopluuniem_test"
+    /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -d shopluuniem_test -i server_app/database/schema.sql || true
+
       
       - name: Run backend tests
         env:
