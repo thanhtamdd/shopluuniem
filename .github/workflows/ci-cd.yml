@@ -13,6 +13,7 @@ on:
 
 env:
   NODE_VERSION: '16.x'
+  SKIP_PREFLIGHT_CHECK: true
   DB_SERVER: localhost
   DB_PORT: 1433
   DB_USER: sa
@@ -37,7 +38,6 @@ jobs:
       
       - name: Install dependencies
         run: |
-          npm ci
           cd server_app && npm ci
           cd ../admin_app && npm ci
           cd ../client_app && npm ci
